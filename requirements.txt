@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-dotenv
+openai
+pandas
+pyarrow
+numpy
+prometheus-client
+kagglehub
+pytest
+httpx
+bm25s
+PyStemmer
+fastembed

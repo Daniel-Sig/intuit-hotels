@@ -1,0 +1,10 @@
+.venv/
+venv/
+.idea/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Data and generated indexes are rebuilt by main.py / app code, not versioned
+data/
+# Third-party assignment brief
+Senior MLE home assignment.pdf

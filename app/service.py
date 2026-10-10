@@ -1,0 +1,136 @@
+"""Question -> filters -> BM25 candidates -> (optional) rerank -> evidence."""
+import logging
+import os
+import time
+
+import pandas as pd
+
+from app.bm25_index import ReviewSearch
+from app.observability import INSUFFICIENT, STATS_FAILURES, stage
+from app.query_parser import QueryParser
+from app.rerank import Reranker
+from app.router import route
+from app.schemas import AskRequest, AskResponse, Evidence, Stats
+from app.stats import StatsEngine
+
+log = logging.getLogger(__name__)
+
+CANDIDATES = 50  # BM25 candidates handed to the reranker
+MIN_EVIDENCE = 3  # fewer than this and we say there isn't enough to answer
+# Cross-encoder score below which even the best candidate is treated as off-topic. Provisional: set from a
+# small hand-made set of sensible vs nonsense questions (see README), to be re-fit on a golden set from val.
+RELEVANCE_MIN = float(os.environ.get("RELEVANCE_MIN", "-1.0"))
+
+
+class UnknownFilterValue(ValueError):
+    """An explicit filter value that does not exist in the dataset."""
+
+
+class AssistantService:
+    def __init__(self, search: ReviewSearch, reranker: Reranker | None = None, stats: StatsEngine | None = None):
+        self.search = search
+        self.reranker = reranker
+        self.stats = stats
+        self.cities = search.values("city")
+        self.nationalities = search.values("Reviewer_Nationality")
+        self.parser = QueryParser(self.cities, self.nationalities, search.values("Hotel_Name"))
+
+    def _filters(self, req: AskRequest, parsed_filters: dict) -> dict:
+        """Parsed filters, overridden by anything the caller set explicitly."""
+        filters = dict(parsed_filters)
+        if req.city:
+            if req.city not in self.cities:
+                raise UnknownFilterValue(f"city {req.city!r} not in dataset; available: {self.cities}")
+            filters["city"] = [req.city]
+        if req.nationality:
+            if req.nationality not in self.nationalities:
+                raise UnknownFilterValue(f"nationality {req.nationality!r} not in dataset")
+            filters["Reviewer_Nationality"] = [req.nationality]
+        if req.months:
+            filters["review_month"] = sorted(set(req.months))
+        if req.sentiment:
+            filters["sentiment"] = req.sentiment
+        return filters
+
+    def ask(self, req: AskRequest) -> AskResponse:
+        start = time.perf_counter()
+        with stage("parse"):
+            parsed = self.parser.parse(req.question)
+            filters = self._filters(req, parsed.filters)
+
+        if parsed.unsupported and "city" not in filters:
+            INSUFFICIENT.labels("unsupported_city").inc()
+            return self._response(
+                [], filters, start,
+                f"No reviews for {', '.join(parsed.unsupported)}; the dataset covers {', '.join(self.cities)}.",
+            )
+
+        search_kwargs = dict(filters)
+        city = search_kwargs.pop("city", None)
+        sentiment = search_kwargs.pop("sentiment", None)
+        # Search on the topic alone when there is one; an open-ended question ("what do X say about Y")
+        # has none, so it falls back to the full leftover text and is not relevance-checked.
+        search_query = parsed.topic or parsed.query
+        with stage("bm25"):
+            candidates = self.search.search(search_query, k=CANDIDATES, city=city, sentiment=sentiment, **search_kwargs)
+
+        if self.reranker is not None and not candidates.empty:
+            with stage("rerank"):
+                top = self.reranker.rerank(search_query, candidates, top_n=req.top_k)
+            if parsed.topic and top["rerank_score"].max() < RELEVANCE_MIN:
+                INSUFFICIENT.labels("low_relevance").inc()
+                return self._response(
+                    [], filters, start,
+                    "The reviews found don't appear relevant to this question; "
+                    "it may not be about hotel guest feedback.",
+                )
+        else:
+            top = candidates.head(req.top_k)
+
+        evidence = [self._evidence(row) for row in top.itertuples(index=False)]
+        operation = route(req.question)
+        # A topic that matched nothing and asked for no number would only get whole-pool stats: misleading.
+        stats = None if (candidates.empty and parsed.topic and operation is None) else self._stats(filters, operation)
+        message = None
+        # Judged on everything that matched, not on what top_k happened to return.
+        insufficient = len(candidates) < MIN_EVIDENCE
+        if insufficient:
+            INSUFFICIENT.labels("too_few_results").inc()
+            message = f"Only {len(candidates)} matching review(s) found; not enough to answer reliably."
+        return self._response(evidence, filters, start, message, stats, insufficient)
+
+    def _stats(self, filters: dict, operation) -> Stats | None:
+        """Aggregates must never fail the request: on error, log and answer without them."""
+        if self.stats is None:
+            return None
+        try:
+            with stage("stats"):
+                return self.stats.compute(filters, operation)
+        except Exception:
+            STATS_FAILURES.inc()
+            log.exception("stats computation failed")
+            return None
+
+    @staticmethod
+    def _evidence(row) -> Evidence:
+        return Evidence(
+            review_id=int(row.review_id), text=row.text, sentiment=row.sentiment, hotel=row.Hotel_Name,
+            city=row.city, reviewer_nationality=row.Reviewer_Nationality, review_month=int(row.review_month),
+            review_year=int(row.review_year), reviewer_score=float(row.Reviewer_Score),
+            bm25_score=float(row.score),
+            rerank_score=float(row.rerank_score) if hasattr(row, "rerank_score") else None,
+        )
+
+    @staticmethod
+    def _response(
+        evidence: list[Evidence], filters: dict, start: float, message: str | None, stats: Stats | None = None,
+        insufficient: bool = True,
+    ) -> AskResponse:
+        return AskResponse(
+            evidence=evidence,
+            stats=stats,
+            filters_applied=filters,
+            insufficient_evidence=insufficient,
+            message=message,
+            latency_ms=round((time.perf_counter() - start) * 1000, 1),
+        )
