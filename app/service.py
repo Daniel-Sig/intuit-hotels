@@ -6,7 +6,9 @@ import time
 import pandas as pd
 
 from app.bm25_index import ReviewSearch
-from app.observability import INSUFFICIENT, STATS_FAILURES, stage
+from app.llm import Answerer
+from app.observability import INSUFFICIENT, LLM_ERRORS, LLM_FALLBACK, STATS_FAILURES, stage
+from app.planner import Plan, Planner
 from app.query_parser import QueryParser
 from app.rerank import Reranker
 from app.router import route
@@ -27,7 +29,10 @@ class UnknownFilterValue(ValueError):
 
 
 class AssistantService:
-    def __init__(self, search: ReviewSearch, reranker: Reranker | None = None, stats: StatsEngine | None = None):
+    def __init__(self, search: ReviewSearch, reranker: Reranker | None = None, stats: StatsEngine | None = None,
+                 answerer: Answerer | None = None, planner: Planner | None = None):
+        self.answerer = answerer
+        self.planner = planner
         self.search = search
         self.reranker = reranker
         self.stats = stats
@@ -55,8 +60,13 @@ class AssistantService:
     def ask(self, req: AskRequest) -> AskResponse:
         start = time.perf_counter()
         with stage("parse"):
-            parsed = self.parser.parse(req.question)
+            plan = self._plan(req.question)
+            parsed = plan.parsed
             filters = self._filters(req, parsed.filters)
+
+        if not plan.in_scope:
+            INSUFFICIENT.labels("off_topic").inc()
+            return self._response([], filters, start, "This doesn't look like a question about hotel guest reviews.")
 
         if parsed.unsupported and "city" not in filters:
             INSUFFICIENT.labels("unsupported_city").inc()
@@ -88,7 +98,7 @@ class AssistantService:
             top = candidates.head(req.top_k)
 
         evidence = [self._evidence(row) for row in top.itertuples(index=False)]
-        operation = route(req.question)
+        operation = plan.operation
         # A topic that matched nothing and asked for no number would only get whole-pool stats: misleading.
         stats = None if (candidates.empty and parsed.topic and operation is None) else self._stats(filters, operation)
         message = None
@@ -97,7 +107,22 @@ class AssistantService:
         if insufficient:
             INSUFFICIENT.labels("too_few_results").inc()
             message = f"Only {len(candidates)} matching review(s) found; not enough to answer reliably."
-        return self._response(evidence, filters, start, message, stats, insufficient)
+        response = self._response(evidence, filters, start, message, stats, insufficient)
+        if self.answerer is not None and not insufficient:
+            response.answer = self.answerer.answer(req.question, evidence, stats)
+            response.latency_ms = round((time.perf_counter() - start) * 1000, 1)
+        return response
+
+    def _plan(self, question: str) -> Plan:
+        """LLM plan when configured; the rule-based parser/router on any failure or when there is no LLM."""
+        if self.planner is not None:
+            try:
+                return self.planner.plan(question)
+            except Exception:
+                LLM_ERRORS.inc()
+                LLM_FALLBACK.inc()
+                log.exception("llm planner failed; using rule-based parser")
+        return Plan(self.parser.parse(question), route(question))
 
     def _stats(self, filters: dict, operation) -> Stats | None:
         """Aggregates must never fail the request: on error, log and answer without them."""

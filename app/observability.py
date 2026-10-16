@@ -15,6 +15,12 @@ REQUEST_LATENCY = Histogram("request_latency_seconds", "End-to-end request laten
 STAGE_LATENCY = Histogram("stage_latency_seconds", "Latency of one pipeline stage", ["stage"], buckets=BUCKETS)
 INSUFFICIENT = Counter("insufficient_evidence_total", "Answers flagged as insufficient evidence", ["reason"])
 STATS_FAILURES = Counter("stats_failures_total", "Aggregate computations that failed and were skipped")
+LLM_LATENCY = Histogram("llm_latency_seconds", "LLM answer call latency", buckets=(0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 20.0))
+LLM_TOKENS = Counter("llm_tokens_total", "LLM tokens used", ["kind"])
+LLM_ERRORS = Counter("llm_errors_total", "LLM calls that failed or returned unusable output")
+CITATION_INVALID = Counter("citation_invalid_total", "LLM answers dropped for citing reviews not in the evidence")
+LLM_FALLBACK = Counter("llm_fallback_total", "Questions planned by the rule-based parser because the LLM planner failed")
+FILTER_REJECTED = Counter("filter_rejected_total", "LLM-proposed filter values dropped for not existing in the data", ["field"])
 
 # Shared with the worker thread FastAPI runs sync endpoints in; the dict is mutated, not replaced.
 request_ctx: contextvars.ContextVar[dict] = contextvars.ContextVar("request_ctx", default={})

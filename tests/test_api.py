@@ -86,7 +86,7 @@ def test_invalid_input_is_rejected(ready, body):
 
 def test_unknown_explicit_city_is_422(ready):
     r = ask(ready, question="breakfast", city="Atlantis")
-    assert r.status_code == 422 and "Atlantis" in r.json()["detail"]
+    assert r.status_code == 422 and "Atlantis" in r.json()["detail"] and r.json()["error"] == "unknown_filter_value"
 
 
 def test_service_unavailable_returns_503(client):
@@ -101,3 +101,13 @@ def test_health_and_metrics(ready):
     text = ready.get("/metrics").text
     for name in ("requests_total", "request_latency_seconds", "stage_latency_seconds", "insufficient_evidence_total"):
         assert name in text
+
+
+def test_all_errors_share_one_shape(ready, client):
+    r = ask(ready, question="  ", top_k=500)
+    body = r.json()
+    assert r.status_code == 422 and body["error"] == "invalid_request"
+    assert "question" in body["detail"] and "top_k" in body["detail"]
+    app.state.service = None
+    r = ask(client, question="breakfast please")
+    assert r.status_code == 503 and r.json()["error"] == "index_unavailable"

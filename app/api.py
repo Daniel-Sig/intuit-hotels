@@ -6,18 +6,23 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.bm25_index import ReviewSearch
 from app.data_prep import PROCESSED_DIR
+from app.llm import Answerer, client_from_env
 from app.observability import REQUEST_LATENCY, REQUESTS, request_ctx, setup_logging
+from app.planner import Planner
 from app.rerank import Reranker
 from app.schemas import AskRequest, AskResponse, ErrorResponse
 from app.service import AssistantService, UnknownFilterValue
 from app.stats import StatsEngine
 
+load_dotenv()
 setup_logging()
 log = logging.getLogger("app.api")
 
@@ -27,9 +32,17 @@ async def lifespan(app: FastAPI):
     app.state.service = None
     try:
         reranker = Reranker() if os.environ.get("RERANK", "1") != "0" else None
-        app.state.service = AssistantService(ReviewSearch(), reranker, StatsEngine.from_parquet(PROCESSED_DIR / "train.parquet"))
-        app.state.service.ask(AskRequest(question="friendly staff", top_k=3))  # warm caches/model before traffic
-        log.info("service ready (rerank=%s)", reranker is not None)
+        llm = client_from_env()
+        app.state.service = AssistantService(
+            ReviewSearch(), reranker, StatsEngine.from_parquet(PROCESSED_DIR / "train.parquet"),
+            Answerer(llm) if llm else None,
+        )
+        svc = app.state.service
+        if llm and os.environ.get("LLM_PLANNER", "1") != "0":
+            svc.planner = Planner(llm, svc.cities, svc.nationalities, svc.search.values("Hotel_Name"))
+        warm = AssistantService(svc.search, reranker, svc.stats)  # no LLM call at startup
+        warm.ask(AskRequest(question="friendly staff", top_k=3))  # warm caches/model before traffic
+        log.info("service ready (rerank=%s, llm=%s)", reranker is not None, llm.model if llm else None)
     except FileNotFoundError:
         log.exception("BM25 index missing - build it first (see README)")
     yield
@@ -55,6 +68,19 @@ async def observe(request: Request, call_next):
         endpoint = route.path if route else "unmatched"  # path template, not raw URL: keeps label cardinality bounded
         REQUESTS.labels(endpoint, str(status)).inc()
         REQUEST_LATENCY.labels(endpoint).observe(time.perf_counter() - start)
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(request: Request, exc: RequestValidationError):
+    """Same {"error", "detail"} body as every other error; detail names each bad field."""
+    detail = "; ".join(f"{'.'.join(str(p) for p in e['loc'][1:]) or 'body'}: {e['msg']}" for e in exc.errors())
+    return JSONResponse(status_code=422, content=ErrorResponse(error="invalid_request", detail=detail).model_dump())
+
+
+@app.exception_handler(HTTPException)
+async def http_error(request: Request, exc: HTTPException):
+    code = {422: "unknown_filter_value", 503: "index_unavailable"}.get(exc.status_code, "http_error")
+    return JSONResponse(status_code=exc.status_code, content=ErrorResponse(error=code, detail=str(exc.detail)).model_dump())
 
 
 @app.exception_handler(Exception)

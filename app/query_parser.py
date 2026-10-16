@@ -30,10 +30,13 @@ class ParsedQuery:
     query: str  # question with recognised filter phrases removed, for BM25
     filters: dict = field(default_factory=dict)
     unsupported: list[str] = field(default_factory=list)
+    llm_topic: str | None = None  # set by the LLM planner; the rule-based parser derives the topic instead
 
     @property
     def topic(self) -> str:
         """`query` minus the question frame and stopwords. Empty means nothing specific was asked."""
+        if self.llm_topic is not None:
+            return self.llm_topic
         words = re.findall(r"[A-Za-z0-9']+", self.query)
         return " ".join(w for w in words if w.lower() not in QUESTION_FRAME and w.lower() not in STOPWORDS_EN)
 

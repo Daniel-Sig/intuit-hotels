@@ -8,3 +8,4 @@ __pycache__/
 data/
 # Third-party assignment brief
 Senior MLE home assignment.pdf
+.env
