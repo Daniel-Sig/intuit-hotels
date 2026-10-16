@@ -78,3 +78,8 @@ def test_stats_operations(clean_df, monkeypatch):
 def test_mention_count_requires_a_term():
     with pytest.raises(ValueError):
         Operation(name="mention_count")
+
+
+def test_mention_pattern_matches_noisy_and_noise():
+    pat = mention_pattern("noisy")
+    assert pat.search("a bit noisy at night") and pat.search("street noise") and pat.search("noisier rooms")

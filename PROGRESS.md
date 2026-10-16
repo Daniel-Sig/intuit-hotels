@@ -1,7 +1,7 @@
 # Review Intelligence Assistant: progress notes
 
 Working notes for the Senior MLE home assignment (see the PDF in this folder; it is git-ignored).
-Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then is not committed.
+Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/answerer, citations, judge, balanced retrieval) is not committed.
 
 ## Where things stand
 
@@ -9,15 +9,16 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then is not commit
 |---|---|
 | Task 1: system design | **Done**: `DESIGN.md` |
 | Task 2: FastAPI prototype | **Done**, including the LLM answer (`app/llm.py`) and LLM planner (`app/planner.py`) |
-| Task 3: logging, 2+ metrics, automated tests | **Done** (12 metrics, JSON logs, 47 offline tests) |
+| Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 63 offline tests) |
 | Task 3: quality evaluation and regression plan | **Done as a plan**: `EVAL_AND_MONITORING.md` (golden set not built; the assignment only asks to propose) |
 | Monitoring/alerting plan | **Done**: `EVAL_AND_MONITORING.md` |
 | Bonus: 515K to 50M scaling | **Done**: `SCALING.md` |
 | Consistent error bodies | **Done**: all errors are `{"error", "detail"}` |
 | README with setup/run/test | **Not written** (do last) |
 | Architecture diagram | **Not done** (do last) |
-| LLM | Gemini free tier via OpenAI-compatible endpoint (`GEMINI_API_KEY`, `LLM_MODEL`, default `gemini-3.8-flash`). The assignment names 4o-mini: swap via `LLM_BASE_URL`/`LLM_MODEL`/key. Free tier is ~5 requests/min and sometimes returns 503 |
-| Planner live check | Partly verified (one real call: "tell me a joke" marked out of scope). Retry when Gemini is not overloaded |
+| LLM | Local `qwen2.5:3b` via Ollama for test runs (`LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=qwen2.5:3b LLM_TIMEOUT=120`); Gemini free tier also works (`GEMINI_API_KEY`, ~20 requests/day per model). The assignment names 4o-mini: swap via `LLM_BASE_URL`/`LLM_MODEL`/key |
+| Evaluation tooling | `scripts/run_questions.py` (CSV of questions to answers, citations, evidence) and `scripts/judge_answers.py` (LLM-as-judge, `app/judge.py`). In production the judge would be a stronger model |
+| Retrieval quality | Evidence balanced between positive and negative text when no side is requested; numbers in answers must appear in the stats/evidence; operation/nationality/sentiment/months from rules, not the LLM |
 
 ## How to run it
 

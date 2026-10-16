@@ -111,3 +111,14 @@ def test_all_errors_share_one_shape(ready, client):
     app.state.service = None
     r = ask(client, question="breakfast please")
     assert r.status_code == 503 and r.json()["error"] == "index_unavailable"
+
+
+def test_relevance_gate_is_skipped_for_numeric_questions(client, make_service):
+    app.state.service = make_service(rerank_score=-9.0)  # below RELEVANCE_MIN for every candidate
+    try:
+        low = ask(client, question="is the wifi good?").json()
+        assert low["insufficient_evidence"] and "relevant" in low["message"]
+        number = ask(client, question="how many reviews mention wifi?").json()
+        assert not number["insufficient_evidence"] or "relevant" not in (number["message"] or "")
+    finally:
+        app.state.service = None

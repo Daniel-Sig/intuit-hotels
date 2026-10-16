@@ -7,6 +7,26 @@ from bm25s.stopwords import STOPWORDS_EN
 
 SEASONS = {"spring": [3, 4, 5], "summer": [6, 7, 8], "autumn": [9, 10, 11], "fall": [9, 10, 11], "winter": [12, 1, 2]}
 MONTHS = {name.lower(): i for i, name in enumerate(calendar.month_name) if name}
+# "Australian guests" -> the dataset's nationality value. Only entries whose target exists in the data are used.
+DEMONYMS = {
+    "australian": "Australia", "italian": "Italy", "german": "Germany", "french": "France", "british": "United Kingdom",
+    "english": "United Kingdom", "spanish": "Spain", "dutch": "Netherlands", "american": "United States of America",
+    "canadian": "Canada", "irish": "Ireland", "swiss": "Switzerland", "swedish": "Sweden", "russian": "Russia",
+    "chinese": "China", "indian": "India", "japanese": "Japan", "brazilian": "Brazil", "polish": "Poland",
+    "portuguese": "Portugal", "belgian": "Belgium", "austrian": "Austria", "greek": "Greece", "turkish": "Turkey",
+    "norwegian": "Norway", "danish": "Denmark", "israeli": "Israel", "mexican": "Mexico", "romanian": "Romania",
+}
+# Sentiment is only filtered on when the question asks for one side explicitly ("complain", "praise").
+# "Is the wifi good?" wants both sides, so it matches neither.
+NEGATIVE_ASK = re.compile(r"\b(complain\w*|complaints?|negatives?|problems?|issues?|dislikes?|hated?|worst)\b", re.IGNORECASE)
+POSITIVE_ASK = re.compile(r"\b(praise\w*|positives?|loved?|enjoyed?|best things?|favou?rites?)\b", re.IGNORECASE)
+
+
+def detect_sentiment(question: str) -> str | None:
+    neg, pos = NEGATIVE_ASK.search(question), POSITIVE_ASK.search(question)
+    return "negative" if neg and not pos else "positive" if pos and not neg else None
+
+
 # Cities people ask about that the dataset does not cover, so we can say so instead of guessing.
 UNSUPPORTED_CITIES = {
     "rome", "berlin", "madrid", "lisbon", "prague", "budapest", "munich", "dublin", "brussels",
@@ -22,6 +42,8 @@ QUESTION_FRAME = {
     "from", "about", "over", "after", "before", "during", "between", "which", "who", "where", "when", "why",
     "any", "some", "can", "could", "would", "should", "i", "me", "my", "you", "your", "we", "us", "has", "have",
     "had", "been", "am", "time", "visit", "go", "travel", "worth", "recommend", "recommended",
+    "complain", "complains", "complained", "complaint", "complaints", "praise", "praises", "praised",
+    "like", "likes", "liked", "love", "loved", "enjoy", "enjoyed", "problem", "problems", "issue", "issues",
 }
 
 
@@ -52,10 +74,11 @@ class QueryParser:
     def __init__(self, cities: list[str], nationalities: list[str], hotels: list[str]):
         self.cities = {c.lower(): c for c in cities}
         self.nationalities = {n.lower(): n for n in nationalities}
+        self.demonyms = {d: self.nationalities[c.lower()] for d, c in DEMONYMS.items() if c.lower() in self.nationalities}
         self.hotels = {h.lower(): h for h in hotels}
         self._hotel_re = _alternation(list(self.hotels))
         self._city_re = _alternation(list(self.cities))
-        self._nat_re = _alternation(list(self.nationalities))
+        self._nat_re = _alternation(list(self.nationalities) + list(self.demonyms))
         self._unsupported_re = _alternation(list(UNSUPPORTED_CITIES))
         # "may" is also a common verb, so only treat it as a month after a preposition.
         self._month_re = _alternation([m for m in MONTHS if m != "may"])
@@ -81,7 +104,8 @@ class QueryParser:
         unsupported, text = self._take(self._unsupported_re, text)
         nats, text = self._take(self._nat_re, text)
         if nats:
-            filters["Reviewer_Nationality"] = [self.nationalities[n] for n in nats]
+            filters["Reviewer_Nationality"] = list(dict.fromkeys(
+                self.nationalities.get(n) or self.demonyms[n] for n in nats))
 
         months: list[int] = []
         found, text = self._take(self._month_re, text)
@@ -94,6 +118,9 @@ class QueryParser:
             months += SEASONS[s]
         if months:
             filters["review_month"] = sorted(set(months))
+
+        if sentiment := detect_sentiment(question):
+            filters["sentiment"] = sentiment
 
         return ParsedQuery(
             query=re.sub(r"\s+", " ", text).strip() or question,

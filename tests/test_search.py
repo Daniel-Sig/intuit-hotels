@@ -1,3 +1,4 @@
+import pandas as pd
 from app.bm25_index import MIN_WORDS, to_chunks
 
 
@@ -36,3 +37,23 @@ def test_dedupe_collapses_identical_text_but_keeps_it_filterable(search):
 def test_no_match_returns_empty(search):
     assert search.search("zzzzqqq").empty
     assert search.search("breakfast", city="Amsterdam", Reviewer_Nationality="Germany").empty
+
+
+def _ranked(pos, neg):
+    rows = [dict(sentiment="negative", rerank_score=10 - i) for i in range(neg)]
+    rows += [dict(sentiment="positive", rerank_score=1 - i * 0.1) for i in range(pos)]
+    return pd.DataFrame(rows).sort_values("rerank_score", ascending=False).reset_index(drop=True)
+
+
+def test_pick_balances_polarity_when_no_side_requested():
+    from app.service import AssistantService
+    top = AssistantService._pick(_ranked(pos=4, neg=8), k=6, balanced=True)
+    assert top["sentiment"].value_counts().to_dict() == {"negative": 3, "positive": 3}
+    assert list(top["rerank_score"]) == sorted(top["rerank_score"], reverse=True)
+
+
+def test_pick_tops_up_from_the_other_side_and_respects_a_requested_side():
+    from app.service import AssistantService
+    top = AssistantService._pick(_ranked(pos=1, neg=8), k=6, balanced=True)
+    assert len(top) == 6 and (top["sentiment"] == "positive").sum() == 1
+    assert len(AssistantService._pick(_ranked(pos=4, neg=8), k=6, balanced=False)) == 6

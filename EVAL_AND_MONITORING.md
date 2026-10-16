@@ -16,9 +16,10 @@
 | `llm_latency_seconds`, `llm_tokens_total{kind}`, `llm_errors_total` | LLM health and cost |
 | `llm_fallback_total` | planner fell back to rules |
 | `citation_invalid_total` | answers dropped for ungrounded citations |
+| `ungrounded_number_total` | answers dropped for stating a number not in the stats or evidence |
 | `filter_rejected_total{field}` | LLM proposed filter values that do not exist |
 
-**Tests:** 47 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
+**Tests:** 63 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
 
 ## 2. Alerts (proposal)
 
@@ -27,7 +28,7 @@
 | High error rate | 5xx > 2% for 5 min | page |
 | Slow | p95 `request_latency` > 1 s for 10 min (retrieval-only) or > 8 s with LLM | page / ticket |
 | LLM degraded | `llm_errors_total` rate > 10% for 10 min, or `llm_fallback_total` rising | ticket: service still works in reduced mode |
-| Grounding problems | sustained growth of `citation_invalid_total` | ticket: prompt/model regression |
+| Grounding problems | sustained growth of `citation_invalid_total` or `ungrounded_number_total` | ticket: prompt/model regression |
 | Behaviour drift | `insufficient_evidence` rate > 2x its 7-day baseline | ticket: data, parser or traffic change |
 | Cost | daily LLM tokens or spend above budget | ticket |
 | Index missing | `/health` 503 | page |
@@ -46,6 +47,8 @@
 | Answer grounding | share of claims supported by cited reviews; numbers appear in the stats | LLM-as-judge with a rubric, calibrated on a human-labelled sample (citation validity is already enforced in code) |
 | Answer usefulness | covers both sides, no overclaiming, correct refusal | judge plus periodic human review |
 | Refusals | decline precision and recall on the negative set; false-decline rate on valid questions | labels |
+
+**LLM-as-judge (prototype implemented).** `scripts/run_questions.py` runs a CSV of questions through the real pipeline and `scripts/judge_answers.py` scores each row with an LLM against a fixed rubric: grounded (1-5), numbers correct, relevant (1-5), balanced, and for refusals whether declining was right. The pass/fail verdict is computed in code from those scores, because small judge models contradict their own verdicts. The prototype was run with the same 3B local model that produces the answers, which is lenient and noisy: it passed a wrong decline early on and sometimes gave unconvincing reasons. In production the judge would be a stronger model than the one being judged, calibrated against a human-labelled sample before its scores gate anything. It did already catch a real defect, a fabricated percentage, which led to the deterministic number check.
 
 **Regression testing.** Run the golden set in CI on every change to a prompt, model, index build or threshold. The deterministic layers (planner, retrieval, aggregates, refusals) run offline against a fixed index. LLM-judged layers run on a sample and compare to the last accepted baseline. Gate: no drop beyond tolerance on any layer (for example, filter accuracy and refusal metrics must not fall by more than 2 points, grounding must not fall at all). The relevance threshold (`RELEVANCE_MIN`, currently provisional at -1.0 from about 30 queries) is re-fitted on this set, trading false declines against missed off-topic questions.
 

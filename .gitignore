@@ -9,3 +9,7 @@ data/
 # Third-party assignment brief
 Senior MLE home assignment.pdf
 .env
+# Evaluation run outputs; keep the question set and one sample judged run
+eval/*
+!eval/questions.csv
+!eval/judged_final.csv

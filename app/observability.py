@@ -19,6 +19,7 @@ LLM_LATENCY = Histogram("llm_latency_seconds", "LLM answer call latency", bucket
 LLM_TOKENS = Counter("llm_tokens_total", "LLM tokens used", ["kind"])
 LLM_ERRORS = Counter("llm_errors_total", "LLM calls that failed or returned unusable output")
 CITATION_INVALID = Counter("citation_invalid_total", "LLM answers dropped for citing reviews not in the evidence")
+UNGROUNDED_NUMBER = Counter("ungrounded_number_total", "LLM answers dropped for stating a number not in the stats or evidence")
 LLM_FALLBACK = Counter("llm_fallback_total", "Questions planned by the rule-based parser because the LLM planner failed")
 FILTER_REJECTED = Counter("filter_rejected_total", "LLM-proposed filter values dropped for not existing in the data", ["field"])
 

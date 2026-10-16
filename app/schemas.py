@@ -44,6 +44,11 @@ class Evidence(BaseModel):
     rerank_score: float | None = None
 
 
+class Citation(BaseModel):
+    review_id: int
+    snippet: str = Field(description="First 10 words of the review, followed by '...'.")
+
+
 class OperationResult(BaseModel):
     name: Literal["mean_score", "count", "mention_count"]
     group_by: str | None = None
@@ -65,6 +70,7 @@ class Stats(BaseModel):
 class AskResponse(BaseModel):
     # Null until the LLM answer layer is plugged in; the evidence is what the answer will be grounded on.
     answer: str | None = None
+    citations: list[Citation] = Field(default_factory=list, description="Reviews the answer cites, in citation order.")
     evidence: list[Evidence]
     stats: Stats | None = None
     filters_applied: dict

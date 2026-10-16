@@ -81,13 +81,23 @@ class AssistantService:
         # Search on the topic alone when there is one; an open-ended question ("what do X say about Y")
         # has none, so it falls back to the full leftover text and is not relevance-checked.
         search_query = parsed.topic or parsed.query
+        # With no side requested, search positive and negative text separately. Otherwise one polarity can crowd
+        # out the other (searching "friendly" mostly returns "staff were not friendly") and the answer sees one side.
+        balanced = sentiment is None
         with stage("bm25"):
-            candidates = self.search.search(search_query, k=CANDIDATES, city=city, sentiment=sentiment, **search_kwargs)
+            if balanced:
+                candidates = pd.concat(
+                    [self.search.search(search_query, k=CANDIDATES // 2, city=city, sentiment=s, **search_kwargs)
+                     for s in ("positive", "negative")], ignore_index=True)
+            else:
+                candidates = self.search.search(search_query, k=CANDIDATES, city=city, sentiment=sentiment, **search_kwargs)
 
         if self.reranker is not None and not candidates.empty:
             with stage("rerank"):
-                top = self.reranker.rerank(search_query, candidates, top_n=req.top_k)
-            if parsed.topic and top["rerank_score"].max() < RELEVANCE_MIN:
+                ranked = self.reranker.rerank(search_query, candidates, top_n=len(candidates))
+            top = self._pick(ranked, req.top_k, balanced)
+            # Not applied when a number was asked for: that answer comes from the stats, and the evidence is context.
+            if parsed.topic and plan.operation is None and ranked["rerank_score"].max() < RELEVANCE_MIN:
                 INSUFFICIENT.labels("low_relevance").inc()
                 return self._response(
                     [], filters, start,
@@ -95,7 +105,7 @@ class AssistantService:
                     "it may not be about hotel guest feedback.",
                 )
         else:
-            top = candidates.head(req.top_k)
+            top = self._pick(candidates.sort_values("score", ascending=False).reset_index(drop=True), req.top_k, balanced)                 if not candidates.empty else candidates
 
         evidence = [self._evidence(row) for row in top.itertuples(index=False)]
         operation = plan.operation
@@ -109,9 +119,23 @@ class AssistantService:
             message = f"Only {len(candidates)} matching review(s) found; not enough to answer reliably."
         response = self._response(evidence, filters, start, message, stats, insufficient)
         if self.answerer is not None and not insufficient:
-            response.answer = self.answerer.answer(req.question, evidence, stats)
+            if result := self.answerer.answer(req.question, evidence, stats):
+                response.answer, response.citations = result
             response.latency_ms = round((time.perf_counter() - start) * 1000, 1)
         return response
+
+    @staticmethod
+    def _pick(ranked: pd.DataFrame, k: int, balanced: bool) -> pd.DataFrame:
+        """Top `k` of an already best-first `ranked` frame. When `balanced`, up to half come from each polarity
+        (the other side tops up if one runs short), then the result is put back in score order."""
+        if not balanced:
+            return ranked.head(k)
+        half = -(-k // 2)
+        chosen = pd.concat([ranked[ranked["sentiment"] == s].head(half) for s in ("positive", "negative")])
+        if len(chosen) < k:
+            chosen = pd.concat([chosen, ranked.drop(chosen.index).head(k - len(chosen))])
+        by = "rerank_score" if "rerank_score" in chosen else "score"
+        return chosen.sort_values(by, ascending=False).reset_index(drop=True)
 
     def _plan(self, question: str) -> Plan:
         """LLM plan when configured; the rule-based parser/router on any failure or when there is no LLM."""

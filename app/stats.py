@@ -35,7 +35,8 @@ def mention_pattern(term: str) -> re.Pattern:
     Same stemmer as the search index, so "noise" also finds "noisy" and "breakfast" finds
     "breakfasts". It can over-match (the stem of "friendly" is "friend", so "friends" counts).
     """
-    stems = [re.escape(STEMMER.stemWord(w)) for w in re.findall(r"[a-z0-9']+", term.lower())]
+    # A stem ending in "i" ("noisy" -> "noisi") would miss "noise"; drop the letter so both forms match.
+    stems = [re.escape(STEMMER.stemWord(w).removesuffix("i")) for w in re.findall(r"[a-z0-9']+", term.lower())]
     return re.compile(r"\b" + r"\W+".join(rf"{s}\w*" for s in stems), re.IGNORECASE)
 
 
