@@ -121,7 +121,7 @@ box(cols[1], r1, bw, bh, "llm", "1 · Plan", ["LLM: city, topic,", "scope. Code:
 box(cols[2], r1, bw, bh, "rank", "2 · Search", ["BM25 in matching", "indexes, reranked", "by cross-encoder"], ["rank"])
 box(cols[3], r1, bw, bh, "code", "3 · Statistics", ["pandas over all", "matching reviews:", "number or breakdown"], ["code"])
 box(cols[4], r1, bw, bh, "code", "4 · Gate", ["too few or poor", "matches: decline", "(no LLM call)"], ["code"])
-box(cols[5], r1, bw, bh, "llm", "5 · Answer", ["LLM writes it; code", "checks IDs, numbers", "and claims"], ["llm"])
+box(cols[5], r1, bw, bh, "llm", "5 · Answer", ["LLM writes the answer", "code: IDs, numbers", "LLM: claim check"], ["llm"])
 box(cols[6], r1, bw, bh, "plain", "Response", ["answer, citations,", "evidence, stats,", "decline reason"])
 link(0, 1, mid, "valid")
 link(1, 2, mid, "filters")

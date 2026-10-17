@@ -82,9 +82,9 @@
 <text x="1000.1999999999999" y="320" font-size="10.5" font-weight="bold" fill="#2f5d9e" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">code</text>
 <rect x="1080" y="300" width="150" height="95" rx="8" fill="#fbeed6" stroke="#a8650a" stroke-width="1.6"/>
 <text x="1092" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">5 · Answer</text>
-<text x="1092" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM writes it; code</text>
-<text x="1092" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">checks IDs, numbers</text>
-<text x="1092" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">and claims</text>
+<text x="1092" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM writes the answer</text>
+<text x="1092" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">code: IDs, numbers</text>
+<text x="1092" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM: claim check</text>
 <rect x="1194.8" y="308" width="27.2" height="16" rx="3" fill="#fbeed6" stroke="#a8650a" stroke-width="1"/>
 <text x="1208.3999999999999" y="320" font-size="10.5" font-weight="bold" fill="#a8650a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">LLM</text>
 <rect x="1285" y="300" width="150" height="95" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>

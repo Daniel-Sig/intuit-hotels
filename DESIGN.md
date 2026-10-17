@@ -26,7 +26,7 @@ CX agents ask questions about 515K European hotel reviews in plain English. The 
 2. **Retrieve and rerank:** BM25 in the matching indexes, then a cross-encoder reranks.
 3. **Aggregate:** pandas over all matching reviews.
 4. **Gate:** too few matches or poor relevance returns `insufficient_evidence` with a `reason`, with no LLM call.
-5. **Answer and check:** the LLM sees only the retrieved reviews and the statistics. Citations, numbers and claims are checked; if a check fails, the answer is dropped and the evidence is still returned.
+5. **Answer and check:** the LLM sees only the retrieved reviews and the statistics. Code checks the cited IDs and every number; a second LLM call then checks each sentence against the evidence and removes unsupported ones. If a check fails, the answer is dropped and the evidence is still returned.
 
 **The four example questions.** Australians in Amsterdam: nationality and city filters. Paris staff: a breakdown over all Paris reviews gives the real share of positive mentions. London noise in June: month filter, counting "noisy" or "crowded". Spring in Rome: Rome isn't in the data (six cities), so it's declined and the covered cities are listed.
 
