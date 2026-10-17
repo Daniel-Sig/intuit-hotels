@@ -15,6 +15,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from app.bm25_index import ReviewSearch
 from app.data_prep import PROCESSED_DIR
 from app.llm import Answerer, client_from_env
+from app.verifier import ClaimVerifier
 from app.observability import REQUEST_LATENCY, REQUESTS, request_ctx, setup_logging
 from app.planner import Planner
 from app.rerank import Reranker
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):
         llm = client_from_env()
         app.state.service = AssistantService(
             ReviewSearch(), reranker, StatsEngine.from_parquet(PROCESSED_DIR / "train.parquet"),
-            Answerer(llm) if llm else None,
+            Answerer(llm, ClaimVerifier(llm) if os.environ.get("VERIFY_CLAIMS", "1") != "0" else None) if llm else None,
         )
         svc = app.state.service
         if llm and os.environ.get("LLM_PLANNER", "1") != "0":

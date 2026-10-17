@@ -13,3 +13,5 @@ Senior MLE home assignment.pdf
 eval/*
 !eval/questions.csv
 !eval/judged_final.csv
+!eval/golden.csv
+!eval/golden_baseline.json

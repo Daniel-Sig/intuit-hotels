@@ -1,0 +1,41 @@
+id,category,question,expect_decline,expect_filters,expect_operation,numeric,requires_llm
+g01,open-ended,What do reviewers from Australia say about hotels in Amsterdam?,,"{""city"": [""Amsterdam""], ""Reviewer_Nationality"": [""Australia""]}",,,0
+g02,open-ended,What do guests say about hotels in Barcelona?,,"{""city"": [""Barcelona""]}",,,0
+g03,open-ended,What do Italian guests complain about in Barcelona?,,"{""city"": [""Barcelona""], ""Reviewer_Nationality"": [""Italy""], ""sentiment"": ""negative""}",,,0
+g04,open-ended,What do British guests praise about Vienna?,,"{""city"": [""Vienna""], ""Reviewer_Nationality"": [""United Kingdom""], ""sentiment"": ""positive""}",,,0
+g05,open-ended,What do American guests complain about in London?,,"{""city"": [""London""], ""Reviewer_Nationality"": [""United States of America""], ""sentiment"": ""negative""}",,,0
+g06,open-ended,What do German guests say about Paris in winter?,,"{""city"": [""Paris""], ""Reviewer_Nationality"": [""Germany""], ""review_month"": [12, 1, 2]}",,,0
+g07,open-ended,What do Canadian guests say about Milan in autumn?,,"{""city"": [""Milan""], ""Reviewer_Nationality"": [""Canada""], ""review_month"": [9, 10, 11]}",,,0
+g08,open-ended,Tell me about the nightlife in Amsterdam,,"{""city"": [""Amsterdam""]}",,,0
+g09,topic,Is staff in Paris hotels described as friendly?,,"{""city"": [""Paris""]}",,,0
+g10,topic,Are London hotels crowded/noisy in June?,,"{""city"": [""London""], ""review_month"": [6]}",,,0
+g11,topic,Is the wifi good in Vienna hotels?,,"{""city"": [""Vienna""]}",,,0
+g12,topic,Is breakfast good in Amsterdam?,,"{""city"": [""Amsterdam""]}",,,0
+g13,topic,Are rooms clean in Milan hotels?,,"{""city"": [""Milan""]}",,,0
+g14,topic,Is it easy to find parking near hotels in Barcelona?,,"{""city"": [""Barcelona""]}",,,0
+g15,topic,Is it noisy at night in Amsterdam hotels?,,"{""city"": [""Amsterdam""]}",,,0
+g16,topic,Is the location convenient in Paris in spring?,,"{""city"": [""Paris""], ""review_month"": [3, 4, 5]}",,,0
+g17,topic,Do guests like the pool in Barcelona in summer?,,"{""city"": [""Barcelona""], ""review_month"": [6, 7, 8]}",,,0
+g18,topic,Is air conditioning good in Milan in July?,,"{""city"": [""Milan""], ""review_month"": [7]}",,,0
+g19,topic,Is London quiet in December?,,"{""city"": [""London""], ""review_month"": [12]}",,,0
+g20,topic,Is the staff friendly at Hotel Stefanie?,,"{""Hotel_Name"": [""Hotel Stefanie""]}",,,0
+g21,topic,Do reviewers from Ireland like Barcelona hotels?,,"{""city"": [""Barcelona""], ""Reviewer_Nationality"": [""Ireland""]}",,,0
+g22,aggregate,What is the average score of Milan hotels in summer?,,"{""city"": [""Milan""], ""review_month"": [6, 7, 8]}","{""name"": ""mean_score""}","{""metric"": ""mean_score"", ""filters"": {""city"": [""Milan""], ""months"": [6, 7, 8]}}",0
+g23,aggregate,What is the average reviewer score for hotels in Paris?,,"{""city"": [""Paris""]}","{""name"": ""mean_score""}","{""metric"": ""mean_score"", ""filters"": {""city"": [""Paris""]}}",0
+g24,aggregate,Which city has the highest rated hotels?,,,"{""name"": ""mean_score"", ""group_by"": ""city""}","{""metric"": ""mean_score"", ""group_by"": ""city""}",0
+g25,aggregate,Compare average scores across cities,,,"{""name"": ""mean_score"", ""group_by"": ""city""}","{""metric"": ""mean_score"", ""group_by"": ""city""}",0
+g26,aggregate,Which nationality gives the highest scores?,,,"{""name"": ""mean_score"", ""group_by"": ""nationality""}","{""metric"": ""mean_score"", ""group_by"": ""nationality""}",0
+g27,aggregate,Which month has the lowest average rating?,,,"{""name"": ""mean_score"", ""group_by"": ""month""}","{""metric"": ""mean_score"", ""group_by"": ""month""}",0
+g28,aggregate,What is the average score by trip type?,,,"{""name"": ""mean_score"", ""group_by"": ""trip_type""}","{""metric"": ""mean_score"", ""group_by"": ""trip_type""}",0
+g29,aggregate,How many reviews are from Australia?,,"{""Reviewer_Nationality"": [""Australia""]}","{""name"": ""count""}","{""metric"": ""count"", ""filters"": {""nationality"": [""Australia""]}}",0
+g30,aggregate,How many reviews per city?,,,"{""name"": ""count"", ""group_by"": ""city""}","{""metric"": ""count"", ""group_by"": ""city""}",0
+g31,aggregate,How many reviews does each city have?,,,"{""name"": ""count"", ""group_by"": ""city""}","{""metric"": ""count"", ""group_by"": ""city""}",0
+g32,aggregate,How many Paris reviews mention breakfast?,,"{""city"": [""Paris""]}","{""name"": ""mention_count"", ""term"": ""breakfast""}","{""metric"": ""mention_count"", ""filters"": {""city"": [""Paris""]}, ""prefix"": ""breakfast""}",0
+g33,aggregate,How many London reviews mention noise?,,"{""city"": [""London""]}","{""name"": ""mention_count"", ""term"": ""noise""}","{""metric"": ""mention_count"", ""filters"": {""city"": [""London""]}, ""prefix"": ""nois""}",0
+g34,aggregate,How many reviews mention wifi in Vienna?,,"{""city"": [""Vienna""]}","{""name"": ""mention_count"", ""term"": ""wifi""}","{""metric"": ""mention_count"", ""filters"": {""city"": [""Vienna""]}, ""prefix"": ""wifi""}",0
+g35,decline,Is spring a good time to visit Rome based on reviews?,unsupported_city,,,,0
+g36,decline,What do guests say about hotels in Berlin?,unsupported_city,,,,0
+g37,decline,How are the hotels in Lyon?,unsupported_city,,,,1
+g38,decline,Tell me a joke.,off_topic,,,,1
+g39,decline,How do I bake a chocolate cake?,off_topic,,,,1
+g40,decline,What is the capital of France?,off_topic,,,,1

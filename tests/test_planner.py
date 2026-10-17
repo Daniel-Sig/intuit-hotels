@@ -19,7 +19,17 @@ def test_plan_filters_are_validated_against_dataset(make_service):
         "months": [6, 13, "x"], "topic": "friendly staff", "operation": None,
     })
     resp = service.ask(AskRequest(question="do Australians like Paris staff"))
-    assert resp.filters_applied == {"city": ["Paris"], "Reviewer_Nationality": ["Australia"], "review_month": [6]}
+    # Lyon is not in the question and Atlantis is not a nationality; the model's months are ignored (rules only).
+    assert resp.filters_applied == {"city": ["Paris"], "Reviewer_Nationality": ["Australia"]}
+
+
+def test_values_the_question_does_not_state_are_ignored(make_service):
+    # A nationality count: the model adds every city and month, and infers a city from a hotel name.
+    service = _service(make_service, {"in_scope": True, "cities": ["Paris", "London", "Amsterdam"],
+                                      "nationalities": ["Australia"], "months": [1, 2, 3], "hotels": ["Hotel Lumiere"],
+                                      "topic": ""})
+    resp = service.ask(AskRequest(question="How many reviews are from Australia?"))
+    assert resp.filters_applied == {"Reviewer_Nationality": ["Australia"]}
 
 
 def test_demonym_and_explicit_sentiment_come_from_rules(make_service):

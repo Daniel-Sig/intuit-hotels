@@ -54,6 +54,26 @@ class OperationResult(BaseModel):
     group_by: str | None = None
     term: str | None = None
     rows: list[dict] = Field(description="One row per group (or one row if ungrouped); each has `reviews` plus the metric.")
+    summary: str = Field(default="", description="The result in one plain sentence, best group first.")
+
+
+class TopicBreakdown(BaseModel):
+    """How often a topic is mentioned across ALL matching reviews, and on which side of the guest's comment.
+
+    Guests write a positive and a negative comment separately. A mention in the positive comment means they listed
+    it as something they liked; it can still be mildly worded ("not noisy"), so this is a strong hint, not proof.
+    """
+
+    term: str
+    reviews_in_scope: int
+    reviews_mentioning: int
+    mention_rate: float = Field(description="reviews_mentioning / reviews_in_scope.")
+    mentions_in_positive_comment: int
+    mentions_in_negative_comment: int
+    positive_share_of_mentions: float | None = Field(
+        description="mentions_in_positive_comment / (positive + negative mentions); null when nobody mentions it.")
+    negative_share_of_mentions: float | None = None
+    summary: str = Field(default="", description="The same numbers in one plain sentence, for readers and the LLM.")
 
 
 class Stats(BaseModel):
@@ -65,6 +85,12 @@ class Stats(BaseModel):
     with_negative_comment_rate: float | None
     data_scope: str
     operation: OperationResult | None = None
+    topic_breakdown: TopicBreakdown | None = None
+
+    def for_llm(self) -> str:
+        """JSON handed to the model. Leaves out the share of reviews that merely HAVE a positive or negative
+        comment: models misread it as the share of positive or negative opinions."""
+        return self.model_dump_json(exclude={"with_positive_comment_rate", "with_negative_comment_rate"})
 
 
 class AskResponse(BaseModel):
@@ -75,6 +101,9 @@ class AskResponse(BaseModel):
     stats: Stats | None = None
     filters_applied: dict
     insufficient_evidence: bool
+    reason: Literal["unsupported_city", "off_topic", "too_few_results", "low_relevance"] | None = Field(
+        default=None, description="Why the question was declined; null when it was answered.")
+    unsupported_claims_removed: int = Field(default=0, description="Answer sentences dropped by the claim check.")
     message: str | None = Field(default=None, description="Explains an empty or insufficient result.")
     latency_ms: float
 

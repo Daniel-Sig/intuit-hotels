@@ -26,6 +26,7 @@ from app.rerank import Reranker
 from app.schemas import AskRequest
 from app.service import AssistantService
 from app.stats import StatsEngine
+from app.verifier import ClaimVerifier
 
 PAUSE_SECONDS = int(os.environ.get("PAUSE_SECONDS", "60"))  # 0 for a local model
 
@@ -39,7 +40,7 @@ def main(src: str, dst: str) -> None:
     if llm is None:
         sys.exit("No LLM configured: set LLM_API_KEY/GEMINI_API_KEY or LLM_BASE_URL")
     search = ReviewSearch()
-    service = AssistantService(search, Reranker(), StatsEngine.from_parquet(PROCESSED_DIR / "train.parquet"), Answerer(llm))
+    service = AssistantService(search, Reranker(), StatsEngine.from_parquet(PROCESSED_DIR / "train.parquet"), Answerer(llm, ClaimVerifier(llm) if os.environ.get("VERIFY_CLAIMS", "1") != "0" else None))
     service.planner = Planner(llm, service.cities, service.nationalities, search.values("Hotel_Name"))
 
     df = pd.read_csv(src)
@@ -61,6 +62,8 @@ def main(src: str, dst: str) -> None:
             "message": resp.message or "",
             "filters_applied": json.dumps(resp.filters_applied),
             "operation": json.dumps(resp.stats.operation.model_dump()) if resp.stats and resp.stats.operation else "",
+            "topic_breakdown": resp.stats.topic_breakdown.model_dump_json() if resp.stats and resp.stats.topic_breakdown else "",
+            "claims_removed": resp.unsupported_claims_removed,
             "evidence_ids": ",".join(str(e.review_id) for e in resp.evidence),
             "evidence_text": "\n".join(f"[{e.review_id}] ({e.sentiment}) {e.text}"[:700] for e in resp.evidence),
             "latency_s": round(resp.latency_ms / 1000, 1),

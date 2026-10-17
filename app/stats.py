@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, field_validator
 
 from app.bm25_index import MIN_WORDS, STEMMER
-from app.schemas import OperationResult, Stats
+from app.schemas import OperationResult, Stats, TopicBreakdown
 
 GROUP_COLS = {
     "city": "city",
@@ -35,8 +35,13 @@ def mention_pattern(term: str) -> re.Pattern:
     Same stemmer as the search index, so "noise" also finds "noisy" and "breakfast" finds
     "breakfasts". It can over-match (the stem of "friendly" is "friend", so "friends" counts).
     """
-    # A stem ending in "i" ("noisy" -> "noisi") would miss "noise"; drop the letter so both forms match.
-    stems = [re.escape(STEMMER.stemWord(w).removesuffix("i")) for w in re.findall(r"[a-z0-9']+", term.lower())]
+    def stem(word: str) -> str:
+        s = STEMMER.stemWord(word)
+        # The stemmer turns a final "y" into "i" ("noisy" -> "noisi"), which would miss "noise": drop that letter.
+        # A word that really ends in "i" ("wifi") keeps it, or "wif" would also match "wife".
+        return s.removesuffix("i") if word.endswith("y") and s.endswith("i") else s
+
+    stems = [re.escape(stem(w)) for w in re.findall(r"[a-z0-9']+", term.lower())]
     return re.compile(r"\b" + r"\W+".join(rf"{s}\w*" for s in stems), re.IGNORECASE)
 
 
@@ -58,6 +63,28 @@ class Operation(BaseModel):
             raise ValueError("mention_count needs a term")
 
 
+def _summary(op: Operation, rows: list[dict]) -> str:
+    """One plain sentence per result, best group first, so a model (or a person) does not have to read the rows."""
+
+    def line(r: dict) -> str:
+        name = "all" if r["group"] is None else r["group"]
+        if op.name == "mean_score":
+            return f"{r['value']} ({r['reviews']:,} reviews)" if r["group"] is None else f"{name} {r['value']} ({r['reviews']:,} reviews)"
+        if op.name == "count":
+            return f"{r['reviews']:,} reviews" if r["group"] is None else f"{name} {r['reviews']:,} reviews"
+        counted = f"{r['mentions']:,} of {r['reviews']:,} reviews ({r['share']:.1%})"
+        return counted if r["group"] is None else f"{name}: {counted}"
+
+    what = {"mean_score": "Average reviewer score", "count": "Review count",
+            "mention_count": f"Reviews mentioning '{op.term}'"}[op.name]
+    if not rows:
+        return f"{what}: no group has enough reviews."
+    if op.group_by is None:
+        return f"{what}: {line(rows[0])}."
+    order = "highest first" if op.name == "mean_score" else "most first"
+    return f"{what} by {op.group_by}, {order}: " + "; ".join(line(r) for r in rows) + "."
+
+
 class StatsEngine:
     def __init__(self, df: pd.DataFrame):
         self.df = df[COLUMNS].copy()
@@ -76,7 +103,41 @@ class StatsEngine:
                 mask &= self.df[col].isin(value if isinstance(value, (list, tuple, set)) else [value])
         return self.df[mask]
 
-    def compute(self, filters: dict, op: Operation | None = None) -> Stats:
+    def _topic_breakdown(self, sub: pd.DataFrame, topic: str, any_of: bool = False) -> TopicBreakdown | None:
+        """Mentions of `topic` in the positive vs negative comment.
+
+        By default every topic word must appear (any order): "friendly staff". With `any_of`, one is enough, for
+        alternatives such as "crowded/noisy".
+        """
+        words = re.findall(r"[a-z0-9']+", topic.lower())[:4]
+        if not words or sub.empty:
+            return None
+        patterns = [mention_pattern(w) for w in words]
+
+        def hits(col: str) -> pd.Series:
+            out = pd.Series(not any_of, index=sub.index)
+            for p in patterns:
+                out = (out | sub[col].str.contains(p)) if any_of else (out & sub[col].str.contains(p))
+            return out
+
+        pos, neg = hits("Positive_Review"), hits("Negative_Review")
+        n_pos, n_neg = int(pos.sum()), int(neg.sum())
+        n_any, term = int((pos | neg).sum()), (" or " if any_of else " ").join(words)
+        pos_share = round(n_pos / (n_pos + n_neg), 3) if n_pos + n_neg else None
+        neg_share = round(1 - pos_share, 3) if pos_share is not None else None
+        summary = (
+            f"{n_any:,} of {len(sub):,} reviews ({n_any / len(sub):.1%}) mention '{term}'. Of the mentions, "
+            f"{n_pos:,} ({pos_share:.1%}) are in the guest's POSITIVE comment (what they liked) and "
+            f"{n_neg:,} ({neg_share:.1%}) in the NEGATIVE comment (what they disliked)."
+            if pos_share is not None else f"No reviews mention '{term}'."
+        )
+        return TopicBreakdown(
+            term=term, reviews_in_scope=len(sub), reviews_mentioning=n_any, mention_rate=round(n_any / len(sub), 3),
+            mentions_in_positive_comment=n_pos, mentions_in_negative_comment=n_neg,
+            positive_share_of_mentions=pos_share, negative_share_of_mentions=neg_share, summary=summary,
+        )
+
+    def compute(self, filters: dict, op: Operation | None = None, topic: str = "", any_of: bool = False) -> Stats:
         sub = self._subset(filters)
         stats = Stats(
             reviews_matched=len(sub),
@@ -87,6 +148,8 @@ class StatsEngine:
         )
         if op is not None and len(sub):
             stats.operation = self._run(sub, op, filters.get("sentiment"))
+        elif op is None and topic:
+            stats.topic_breakdown = self._topic_breakdown(sub, topic, any_of)
         return stats
 
     def _run(self, sub: pd.DataFrame, op: Operation, sentiment: str | None) -> OperationResult:
@@ -120,4 +183,4 @@ class StatsEngine:
                 rows = [r for r in rows if r["reviews"] >= MIN_GROUP_SIZE]
             sort_key = {"mean_score": "value", "count": "reviews", "mention_count": "mentions"}[op.name]
             rows = sorted(rows, key=lambda r: r[sort_key], reverse=True)[:TOP_GROUPS]
-        return OperationResult(name=op.name, group_by=op.group_by, term=op.term, rows=rows)
+        return OperationResult(name=op.name, group_by=op.group_by, term=op.term, rows=rows, summary=_summary(op, rows))

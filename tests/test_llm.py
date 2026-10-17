@@ -81,3 +81,12 @@ def test_answer_with_invented_number_is_dropped(make_service):
     service.answerer = Answerer(FakeLLM(reply))
     resp = service.ask(AskRequest(question="is the staff friendly?"))
     assert resp.answer is None and resp.citations == [] and resp.evidence
+
+
+def test_rounded_percentages_are_allowed_but_invented_decimals_are_not():
+    from app.llm import ungrounded_numbers
+    src = '{"positive_share_of_mentions": 0.784, "reviews_mentioning": 1200}'
+    assert ungrounded_numbers("About 78% of mentions are positive", src, 3) == []
+    assert ungrounded_numbers("About 78.4% of mentions are positive", src, 3) == []
+    assert ungrounded_numbers("About 73.4% of mentions are positive", src, 3) == ["73.4"]
+    assert ungrounded_numbers("About 55% of mentions are positive", src, 3) == ["55"]

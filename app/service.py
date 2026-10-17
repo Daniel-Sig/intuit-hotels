@@ -1,6 +1,7 @@
 """Question -> filters -> BM25 candidates -> (optional) rerank -> evidence."""
 import logging
 import os
+import re
 import time
 
 import pandas as pd
@@ -66,13 +67,15 @@ class AssistantService:
 
         if not plan.in_scope:
             INSUFFICIENT.labels("off_topic").inc()
-            return self._response([], filters, start, "This doesn't look like a question about hotel guest reviews.")
+            return self._response([], filters, start, "This doesn't look like a question about hotel guest reviews.",
+                                  reason="off_topic")
 
         if parsed.unsupported and "city" not in filters:
             INSUFFICIENT.labels("unsupported_city").inc()
             return self._response(
                 [], filters, start,
                 f"No reviews for {', '.join(parsed.unsupported)}; the dataset covers {', '.join(self.cities)}.",
+                reason="unsupported_city",
             )
 
         search_kwargs = dict(filters)
@@ -103,6 +106,7 @@ class AssistantService:
                     [], filters, start,
                     "The reviews found don't appear relevant to this question; "
                     "it may not be about hotel guest feedback.",
+                    reason="low_relevance",
                 )
         else:
             top = self._pick(candidates.sort_values("score", ascending=False).reset_index(drop=True), req.top_k, balanced)                 if not candidates.empty else candidates
@@ -110,17 +114,19 @@ class AssistantService:
         evidence = [self._evidence(row) for row in top.itertuples(index=False)]
         operation = plan.operation
         # A topic that matched nothing and asked for no number would only get whole-pool stats: misleading.
-        stats = None if (candidates.empty and parsed.topic and operation is None) else self._stats(filters, operation)
+        stats = None if (candidates.empty and parsed.topic and operation is None) else self._stats(filters, operation, parsed.topic, any_of=bool(re.search(r"/|\bor\b", req.question)))
         message = None
         # Judged on everything that matched, not on what top_k happened to return.
         insufficient = len(candidates) < MIN_EVIDENCE
         if insufficient:
             INSUFFICIENT.labels("too_few_results").inc()
             message = f"Only {len(candidates)} matching review(s) found; not enough to answer reliably."
-        response = self._response(evidence, filters, start, message, stats, insufficient)
+        response = self._response(evidence, filters, start, message, stats, insufficient,
+                                  "too_few_results" if insufficient else None)
         if self.answerer is not None and not insufficient:
             if result := self.answerer.answer(req.question, evidence, stats):
-                response.answer, response.citations = result
+                response.answer, response.citations = result.text, result.citations
+                response.unsupported_claims_removed = result.removed_claims
             response.latency_ms = round((time.perf_counter() - start) * 1000, 1)
         return response
 
@@ -148,13 +154,13 @@ class AssistantService:
                 log.exception("llm planner failed; using rule-based parser")
         return Plan(self.parser.parse(question), route(question))
 
-    def _stats(self, filters: dict, operation) -> Stats | None:
+    def _stats(self, filters: dict, operation, topic: str = "", any_of: bool = False) -> Stats | None:
         """Aggregates must never fail the request: on error, log and answer without them."""
         if self.stats is None:
             return None
         try:
             with stage("stats"):
-                return self.stats.compute(filters, operation)
+                return self.stats.compute(filters, operation, topic, any_of)
         except Exception:
             STATS_FAILURES.inc()
             log.exception("stats computation failed")
@@ -173,13 +179,14 @@ class AssistantService:
     @staticmethod
     def _response(
         evidence: list[Evidence], filters: dict, start: float, message: str | None, stats: Stats | None = None,
-        insufficient: bool = True,
+        insufficient: bool = True, reason: str | None = None,
     ) -> AskResponse:
         return AskResponse(
             evidence=evidence,
             stats=stats,
             filters_applied=filters,
             insufficient_evidence=insufficient,
+            reason=reason,
             message=message,
             latency_ms=round((time.perf_counter() - start) * 1000, 1),
         )

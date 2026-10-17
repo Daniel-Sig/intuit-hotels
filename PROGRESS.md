@@ -9,7 +9,7 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/
 |---|---|
 | Task 1: system design | **Done**: `DESIGN.md` |
 | Task 2: FastAPI prototype | **Done**, including the LLM answer (`app/llm.py`) and LLM planner (`app/planner.py`) |
-| Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 63 offline tests) |
+| Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 83 offline tests) |
 | Task 3: quality evaluation and regression plan | **Done as a plan**: `EVAL_AND_MONITORING.md` (golden set not built; the assignment only asks to propose) |
 | Monitoring/alerting plan | **Done**: `EVAL_AND_MONITORING.md` |
 | Bonus: 515K to 50M scaling | **Done**: `SCALING.md` |
@@ -17,6 +17,9 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/
 | README with setup/run/test | **Not written** (do last) |
 | Architecture diagram | **Not done** (do last) |
 | LLM | Local `qwen2.5:3b` via Ollama for test runs (`LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=qwen2.5:3b LLM_TIMEOUT=120`); Gemini free tier also works (`GEMINI_API_KEY`, ~20 requests/day per model). The assignment names 4o-mini: swap via `LLM_BASE_URL`/`LLM_MODEL`/key |
+| Golden set | `eval/golden.csv` (40 questions) + `scripts/run_golden.py`: deterministic per-layer checks, `--no-llm` for CI, baseline gate. 100% on every layer in both modes (small, self-written set) |
+| Claim check | `app/verifier.py`: second LLM pass removes unsupported answer sentences; `VERIFY_CLAIMS=0` disables |
+| Topic stats | For topic questions with no number asked, share of mentions in positive vs negative comments over ALL matching reviews, plus plain-language summaries |
 | Evaluation tooling | `scripts/run_questions.py` (CSV of questions to answers, citations, evidence) and `scripts/judge_answers.py` (LLM-as-judge, `app/judge.py`). In production the judge would be a stronger model |
 | Retrieval quality | Evidence balanced between positive and negative text when no side is requested; numbers in answers must appear in the stats/evidence; operation/nationality/sentiment/months from rules, not the LLM |
 

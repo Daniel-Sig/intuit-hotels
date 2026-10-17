@@ -17,9 +17,10 @@
 | `llm_fallback_total` | planner fell back to rules |
 | `citation_invalid_total` | answers dropped for ungrounded citations |
 | `ungrounded_number_total` | answers dropped for stating a number not in the stats or evidence |
+| `claims_removed_total`, `verify_errors_total` | sentences removed by the claim check; claim checks that failed (answer kept) |
 | `filter_rejected_total{field}` | LLM proposed filter values that do not exist |
 
-**Tests:** 63 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
+**Tests:** 83 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
 
 ## 2. Alerts (proposal)
 
@@ -35,7 +36,9 @@
 
 ## 3. Quality evaluation approach (a plan; not yet run)
 
-**Golden set.** About 100-200 questions, built mostly from the **val split** (never indexed, so no leakage) and written to cover each question type: open-ended ("what do guests from Australia say about Amsterdam"), specific-topic ("is staff friendly in Paris"), seasonal ("noisy in London in June"), aggregates (average score, counts, "how many mention breakfast", group-by), and negative cases (a city not in the data such as Rome, off-topic questions, impossible filter combinations). Each item stores the question, the expected filters and operation, whether the system should decline, and for aggregates the expected number computed directly with pandas. Labels are reviewed by a person; an LLM can draft candidates.
+**Golden set (implemented, 40 questions).** `eval/golden.csv` holds labelled questions across open-ended, topic, aggregate and decline cases, and `scripts/run_golden.py` scores them layer by layer with no LLM judging: decline reason, filters, aggregate operation, the number (recomputed with plain pandas, independently of the stats code), that every returned review satisfies the filters, and that both polarities are present when no side was requested. `--no-llm` runs the rules only (deterministic, used as a pytest regression test against the real index when it is present); with an LLM configured it also scores the LLM planner; `--check eval/golden_baseline.json` exits non-zero if a layer drops. Both modes currently score 100% on every layer. That is a regression guard, not a measure of quality: the set is small, was written by the developer, and the planner was fixed whenever the LLM mode exposed an error. It already caught a real bug, a stemming change that turned "wifi" into a pattern also matching "wife". The full plan is a larger set, as described next.
+
+The production plan: about 100-200 questions, built mostly from the **val split** (never indexed, so no leakage) and written to cover each question type: open-ended ("what do guests from Australia say about Amsterdam"), specific-topic ("is staff friendly in Paris"), seasonal ("noisy in London in June"), aggregates (average score, counts, "how many mention breakfast", group-by), and negative cases (a city not in the data such as Rome, off-topic questions, impossible filter combinations). Each item stores the question, the expected filters and operation, whether the system should decline, and for aggregates the expected number computed directly with pandas. Labels are reviewed by a person; an LLM can draft candidates.
 
 **Evaluated layer by layer, so a failure points at its cause:**
 
@@ -43,7 +46,7 @@
 |---|---|---|
 | Planner | filter and operation exact-match, correct decline rate | compare to labels (deterministic) |
 | Retrieval | recall@k and nDCG of labelled relevant reviews; every returned review satisfies the filters | labels plus a filter check |
-| Aggregates | exact match vs pandas | deterministic |
+| Aggregates | exact match vs pandas (implemented) | deterministic |
 | Answer grounding | share of claims supported by cited reviews; numbers appear in the stats | LLM-as-judge with a rubric, calibrated on a human-labelled sample (citation validity is already enforced in code) |
 | Answer usefulness | covers both sides, no overclaiming, correct refusal | judge plus periodic human review |
 | Refusals | decline precision and recall on the negative set; false-decline rate on valid questions | labels |
