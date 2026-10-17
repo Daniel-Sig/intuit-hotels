@@ -34,7 +34,7 @@
 | Cost | daily LLM tokens or spend above budget | ticket |
 | Index missing | `/health` 503 | page |
 
-## 3. Quality evaluation approach (a plan; not yet run)
+## 3. Quality evaluation approach (golden set implemented; the larger plan is not yet run)
 
 **Golden set (implemented, 40 questions).** `eval/golden.csv` holds labelled questions across open-ended, topic, aggregate and decline cases, and `scripts/run_golden.py` scores them layer by layer with no LLM judging: decline reason, filters, aggregate operation, the number (recomputed with plain pandas, independently of the stats code), that every returned review satisfies the filters, and that both polarities are present when no side was requested. `--no-llm` runs the rules only (deterministic, used as a pytest regression test against the real index when it is present); with an LLM configured it also scores the LLM planner; `--check eval/golden_baseline.json` exits non-zero if a layer drops. Both modes currently score 100% on every layer. That is a regression guard, not a measure of quality: the set is small, was written by the developer, and the planner was fixed whenever the LLM mode exposed an error. It already caught a real bug, a stemming change that turned "wifi" into a pattern also matching "wife". The full plan is a larger set, as described next.
 

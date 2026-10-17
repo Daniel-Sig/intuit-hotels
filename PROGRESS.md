@@ -1,7 +1,7 @@
 # Review Intelligence Assistant: progress notes
 
 Working notes for the Senior MLE home assignment (see the PDF in this folder; it is git-ignored).
-Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/answerer, citations, judge, balanced retrieval) is not committed.
+Last updated 2026-10-17. All work is committed.
 
 ## Where things stand
 
@@ -10,7 +10,7 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/
 | Task 1: system design | **Done**: `DESIGN.md` |
 | Task 2: FastAPI prototype | **Done**, including the LLM answer (`app/llm.py`) and LLM planner (`app/planner.py`) |
 | Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 83 offline tests) |
-| Task 3: quality evaluation and regression plan | **Done as a plan**: `EVAL_AND_MONITORING.md` (golden set not built; the assignment only asks to propose) |
+| Task 3: quality evaluation and regression plan | **Done**: plan in `EVAL_AND_MONITORING.md`, plus a working golden set and judge |
 | Monitoring/alerting plan | **Done**: `EVAL_AND_MONITORING.md` |
 | Bonus: 515K to 50M scaling | **Done**: `SCALING.md` |
 | Consistent error bodies | **Done**: all errors are `{"error", "detail"}` |
@@ -84,30 +84,25 @@ Metrics: `requests_total`, `request_latency_seconds`, `stage_latency_seconds` (p
 
 ## Known issues and weaknesses
 
-1. **Off-topic misses:** "how do I bake a chocolate cake" (rerank -0.13) and "tell me a joke" (+2.4) pass. A score cutoff cannot fix this; the LLM answer step needs a domain check.
-2. **Threshold is provisional:** -1.0 sits in a narrow gap (-0.12 for the lowest sensible query, -1.87 for the highest nonsense one) tuned on ~30 queries. Re-fit on a golden set from the val split.
-3. **Open-ended questions** ("what do reviewers from Australia say about Amsterdam?") rank the filtered pool by generic words like "reviewers"/"say", which is arbitrary. Better: a balanced sample of positive and negative reviews, favouring informative ones. Not built.
-4. **`mention_count` is approximate:** stem matching over-matches ("friendly" matches "friends"), short stems are risky ("wi fi"), and synonyms are not covered.
-5. **Nationality demonyms** ("Australian") are not recognised; only "Australia".
-6. **Unsupported cities** are a hand-written list (`UNSUPPORTED_CITIES`); a city not on it (e.g. "Lyon") passes through unfiltered. The LLM parser would fix this properly.
-7. **Polarity is mixed** in evidence ("Staff was not as friendly" can come back for "is staff friendly"). The answer step must weigh both sides.
-8. **Error body shapes differ:** our 422s use `{"detail": "..."}`, pydantic's use a list.
-9. **Reranker off means no relevance check** (only the first two flags apply).
-10. The startup warm-up request is counted in the metrics.
-11. `_country_city` assumes every UK address is London (true for this dataset; would mislabel other UK cities).
-12. Versions are not pinned in `requirements.txt`.
+Fixed since the first prototype: open-ended questions now get a balanced positive/negative sample; demonyms ("Australian") and unsupported cities are handled by the rules and the planner; all errors share `{"error", "detail"}`; `requirements.txt` is pinned.
 
-## LLM layer (not built; no credentials yet)
+Still open:
+1. **Off-topic questions:** with the LLM planner on, its `in_scope` flag declines them (`off_topic`). In rules-only mode ("how do I bake a chocolate cake", "tell me a joke") some still pass the rerank cutoff.
+2. **`RELEVANCE_MIN` (-1.0) is provisional:** it sits in a narrow gap tuned on ~30 queries and has not been re-fit on a larger golden set.
+3. **`mention_count` is approximate:** stem matching over-matches ("friendly" matches "friends") and synonyms are not covered.
+4. **Polarity is a hint:** a positive comment can contain a complaint, and balanced evidence makes the sample look 50/50, so proportions come from the statistics.
+5. **Reranker off (`RERANK=0`) means no relevance check.**
+6. The startup warm-up request is counted in the metrics.
+7. `_country_city` assumes every UK address is London (true for this dataset).
+8. The 3B model sometimes writes a bare number as the whole answer, and an answer that fails a check is withheld without an explanation.
 
-Plan: call 4o-mini through a small client interface, with a fake client for tests.
-- **Router/parser call:** function calling with the 3 operations as tools (enums restrict city, group_by, etc.). Output is validated with pydantic, then checked against real dataset values; on any failure fall back to the rule-based parser/router.
-- **Answer call:** write a cited answer from the evidence and stats only; verify every cited review ID was in the evidence; refuse when `insufficient_evidence`.
-- New metrics to add then: `llm_latency_seconds`, `llm_tokens_total`, `llm_cost_usd_total`, `llm_errors_total`, `llm_fallback_total`, `citation_invalid_total`, `filter_rejected_total`.
-- Replace the hand-written `QUESTION_FRAME` list and `UNSUPPORTED_CITIES` with LLM behaviour.
+## LLM layer (built)
+
+One OpenAI-compatible client (`app/llm.py`) serves three calls: the planner (`app/planner.py`), the answer (`app/llm.py`) and the claim check (`app/verifier.py`). Planner output is validated against real dataset values and falls back to the rule parser; answers are checked for retrieved citation IDs, grounded numbers and unsupported sentences. LLM metrics: `llm_latency_seconds`, `llm_tokens_total`, `llm_errors_total`, `llm_fallback_total`, `citation_invalid_total`, `ungrounded_number_total`, `claims_removed_total`, `verify_errors_total`, `filter_rejected_total`. Tested with a local `qwen2.5:3b` and Gemini's free tier; `gpt-4o-mini` is supported through the same settings but has not been run.
 
 ## Next steps
 
-All assignment deliverables exist. Remaining: commit, review the diagram PDF and docs once more, and the later "improvements" section (see memory note: enum-constrained planner output, stronger judge/model, merge LLM calls, explain withheld answers).
+All assignment deliverables exist. Remaining: revoke the shared Gemini key, optionally run once with `gpt-4o-mini`, and the later "improvements" section (see memory note: enum-constrained planner output, stronger judge/model, merge LLM calls, explain withheld answers).
 
 ## Alerting proposal (for the write-up)
 

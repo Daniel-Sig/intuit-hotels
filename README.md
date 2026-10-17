@@ -32,14 +32,113 @@ curl -X POST localhost:8000/ask -H "Content-Type: application/json" \
   -d '{"question": "How friendly is the staff in Paris hotels?"}'
 ```
 
+## API contract
+
 | Endpoint | Purpose |
 |---|---|
-| `POST /ask` | Ask a question. Body: `question` (3-500 characters), optional `top_k` (1-50), `city`, `nationality`, `months` (1-12), `sentiment` |
-| `GET /health` | Ready once the indexes, statistics and ranker have loaded and warmed up |
+| `POST /ask` | Ask a question |
+| `GET /health` | 200 once the indexes, statistics and ranker have loaded and warmed up; 503 otherwise |
 | `GET /metrics` | Prometheus metrics |
-| `GET /docs` | Interactive API docs |
+| `GET /docs` | Interactive OpenAPI docs |
 
-Response fields: `answer` (null in retrieval-only mode, or when a check fails), `citations` (review ID and first 10 words), `evidence`, `stats`, `filters_applied`, `insufficient_evidence`, `reason`, `message`, `latency_ms`. Errors all share `{"error", "detail"}`; bad input gets a 422.
+**Request** (`POST /ask`, JSON). Only `question` is required. Explicit filters override what is read from the question.
+
+| Field | Type | Rules |
+|---|---|---|
+| `question` | string | 3-500 characters |
+| `top_k` | integer | 1-50, default 10: number of evidence reviews returned |
+| `city` | string | optional; one of Amsterdam, Barcelona, London, Milan, Paris, Vienna |
+| `nationality` | string | optional; as spelled in the dataset, e.g. `Australia` |
+| `months` | list of integers | optional; each 1-12 |
+| `sentiment` | `"positive"` or `"negative"` | optional; search only that side |
+
+**Response** (200). A real response from the local `qwen2.5:3b` model, with the evidence list shortened:
+
+```json
+{
+  "answer": "Friendly is mentioned in both positive and negative comments, with a higher proportion in positive comments (94.3%).",
+  "citations": [
+    {
+      "review_id": 250411,
+      "snippet": "Friendly atmosphere Feels like you re staying in a friend..."
+    },
+    {
+      "review_id": 220746,
+      "snippet": "Most the staff were really friendly but the manager wasn..."
+    }
+  ],
+  "evidence": [
+    {
+      "review_id": 250411,
+      "text": "Friendly atmosphere Feels like you re staying in a friend s apartment",
+      "sentiment": "positive",
+      "hotel": "H tel Arvor Saint Georges",
+      "city": "Paris",
+      "reviewer_nationality": "France",
+      "review_month": 8,
+      "review_year": 2015,
+      "reviewer_score": 10.0,
+      "bm25_score": 0.96,
+      "rerank_score": 4.39
+    },
+    "... (top_k items)"
+  ],
+  "stats": {
+    "reviews_matched": 41607,
+    "avg_reviewer_score": 8.43,
+    "data_scope": "train split, reviews from 2015-08-04 to 2017-01-02",
+    "operation": null,
+    "topic_breakdown": {
+      "term": "friendly",
+      "reviews_in_scope": 41607,
+      "reviews_mentioning": 8186,
+      "mention_rate": 0.197,
+      "positive_share_of_mentions": 0.943,
+      "negative_share_of_mentions": 0.057,
+      "summary": "8,186 of 41,607 reviews (19.7%) mention 'friendly'. Of the mentions, 7,773 (94.3%) are in the guest's POSITIVE comment (what they liked) and 468 (5.7%) in the NEGATIVE comment (what they disliked)."
+    }
+  },
+  "filters_applied": {
+    "city": [
+      "Paris"
+    ]
+  },
+  "insufficient_evidence": false,
+  "reason": null,
+  "unsupported_claims_removed": 0,
+  "message": null,
+  "latency_ms": 3416.8
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `answer` | The cited answer. `null` in retrieval-only mode, when the question is declined, or when a check fails (the evidence is still returned) |
+| `citations` | Reviews the answer cites: ID and first 10 words |
+| `evidence` | The retrieved reviews given to the model, with the scores that ranked them |
+| `stats` | Numbers computed over all matching reviews: the requested operation, or a topic breakdown |
+| `filters_applied` | The exact filters the search used |
+| `insufficient_evidence`, `reason`, `message` | Set when the service declines (below) |
+| `unsupported_claims_removed` | Sentences the claim check deleted from the answer |
+| `latency_ms` | Total server time. About 3 s here, most of it the local model |
+
+**Declined questions** return 200 with `insufficient_evidence: true`, no answer, and a `reason`: `unsupported_city`, `off_topic`, `too_few_results` or `low_relevance`. For example, "What do guests say about hotels in Rome in spring?":
+
+```json
+{"answer": null, "citations": [], "evidence": [], "stats": null,
+ "filters_applied": {"review_month": [3, 4, 5]},
+ "insufficient_evidence": true, "reason": "unsupported_city",
+ "message": "No reviews for Rome; the dataset covers Amsterdam, Barcelona, London, Milan, Paris, Vienna."}
+```
+
+**Errors** all share one body, `{"error": "...", "detail": "..."}`:
+
+| Status | When | `error` |
+|---|---|---|
+| 422 | Invalid input, for example a question under 3 characters | `invalid_request`; `detail` names each bad field |
+| 422 | A `city` or `nationality` filter that is not in the data | `unknown_filter_value` |
+| 503 | Indexes not built or not loaded (run `python main.py`, then restart) | `index_unavailable` |
+| 500 | Unexpected failure | `internal_error`; the cause is in the logs, keyed by the `X-Request-ID` response header |
 
 Example questions: *What do Australian guests say about Amsterdam hotels? Is the staff friendly in Paris? What do guests say about noise in London in June? What do guests say about hotels in Rome in spring?* (Rome is not in the data, so it is declined and the six covered cities are listed: Amsterdam, Barcelona, London, Milan, Paris, Vienna.)
 
