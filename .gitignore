@@ -15,3 +15,5 @@ eval/*
 !eval/judged_final.csv
 !eval/golden.csv
 !eval/golden_baseline.json
+# Local working notes, not part of the submission
+PROGRESS.md
