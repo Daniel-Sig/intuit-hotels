@@ -7,7 +7,7 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/
 
 | Assignment item | Status |
 |---|---|
-| Task 1: system design | **Done**: `DESIGN.md` (2-page summary) and `DESIGN_DETAILS.md` (full rationale) |
+| Task 1: system design | **Done**: `DESIGN.md` |
 | Task 2: FastAPI prototype | **Done**, including the LLM answer (`app/llm.py`) and LLM planner (`app/planner.py`) |
 | Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 83 offline tests) |
 | Task 3: quality evaluation and regression plan | **Done as a plan**: `EVAL_AND_MONITORING.md` (golden set not built; the assignment only asks to propose) |

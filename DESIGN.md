@@ -1,6 +1,6 @@
 # Review Intelligence Assistant: design write-up
 
-CX agents ask questions about 515K European hotel reviews in plain English. The service answers in a few sentences, cites the reviews it used, or says "not enough evidence". The flow is in `docs/architecture.pdf`. More detail: `DESIGN_DETAILS.md`. Monitoring and evaluation: `EVAL_AND_MONITORING.md`. 50M reviews: `SCALING.md`.
+CX agents ask questions about 515K European hotel reviews in plain English. The service answers in a few sentences, cites the reviews it used, or says "not enough evidence". The flow is in `docs/architecture.pdf`. Monitoring and evaluation: `EVAL_AND_MONITORING.md`. 50M reviews: `SCALING.md`.
 
 ## 1. Key decisions and tradeoffs
 
