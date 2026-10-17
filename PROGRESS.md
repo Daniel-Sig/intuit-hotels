@@ -7,15 +7,15 @@ Last updated 2026-10-16. Latest commit: `e907d0a`. Work since then (LLM planner/
 
 | Assignment item | Status |
 |---|---|
-| Task 1: system design | **Done**: `DESIGN.md` |
+| Task 1: system design | **Done**: `DESIGN.md` (2-page summary) and `DESIGN_DETAILS.md` (full rationale) |
 | Task 2: FastAPI prototype | **Done**, including the LLM answer (`app/llm.py`) and LLM planner (`app/planner.py`) |
 | Task 3: logging, 2+ metrics, automated tests | **Done** (14 metrics, JSON logs, 83 offline tests) |
 | Task 3: quality evaluation and regression plan | **Done as a plan**: `EVAL_AND_MONITORING.md` (golden set not built; the assignment only asks to propose) |
 | Monitoring/alerting plan | **Done**: `EVAL_AND_MONITORING.md` |
 | Bonus: 515K to 50M scaling | **Done**: `SCALING.md` |
 | Consistent error bodies | **Done**: all errors are `{"error", "detail"}` |
-| README with setup/run/test | **Not written** (do last) |
-| Architecture diagram | **Not done** (do last) |
+| README with setup/run/test | **Done**: `README.md`; `main.py` builds everything; requirements pinned; `.env.example` |
+| Architecture diagram | **Done**: `docs/architecture.pdf` (also `.png`, `.svg`; `docs/make_architecture.py` regenerates the SVG) |
 | LLM | Local `qwen2.5:3b` via Ollama for test runs (`LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=qwen2.5:3b LLM_TIMEOUT=120`); Gemini free tier also works (`GEMINI_API_KEY`, ~20 requests/day per model). The assignment names 4o-mini: swap via `LLM_BASE_URL`/`LLM_MODEL`/key |
 | Golden set | `eval/golden.csv` (40 questions) + `scripts/run_golden.py`: deterministic per-layer checks, `--no-llm` for CI, baseline gate. 100% on every layer in both modes (small, self-written set) |
 | Claim check | `app/verifier.py`: second LLM pass removes unsupported answer sentences; `VERIFY_CLAIMS=0` disables |
@@ -29,23 +29,12 @@ Python 3.11 venv at `.venv` (3.13 was not installed; we chose 3.11). The older e
 Interpreter: `C:\Users\sigda\PycharmProjects\review_intellegence_assistant\.venv\Scripts\python.exe`
 
 ```
-# 1. Download the dataset into data/raw/ (needs Kaggle credentials if prompted)
-.venv\Scripts\python.exe main.py
-
-# 2. Clean + chronological split -> data/processed/{train,val,test}.parquet
-.venv\Scripts\python.exe -c "from app.data_prep import prepare; prepare('data/raw/Hotel_Reviews.csv')"
-
-# 3. Build the BM25 index from the train split -> data/bm25/  (~13 s)
-.venv\Scripts\python.exe -c "from app.bm25_index import build_index; build_index()"
-
-# 4. Serve (not yet verified with a live uvicorn server; the API was tested in-process)
-.venv\Scripts\python.exe -m uvicorn app.api:app
-
-# Tests (no data or network needed)
-.venv\Scripts\python.exe -m pytest
+.venv\Scripts\python.exe main.py                      # download, clean + split, build indexes (skips finished steps; --rebuild redoes all)
+.venv\Scripts\python.exe -m uvicorn app.api:app       # serve (verified live: /health, /ask, /metrics)
+.venv\Scripts\python.exe -m pytest                    # 83 tests, no data or network needed
 ```
 
-`main.py` only does step 1. Steps 2 and 3 are not wired into it yet.
+See `README.md` for the full setup, LLM options and evaluation commands.
 `RERANK=0` turns the reranker off. `RELEVANCE_MIN` overrides the off-topic threshold.
 
 ## Dataset facts (checked on the real data)
@@ -70,7 +59,7 @@ Interpreter: `C:\Users\sigda\PycharmProjects\review_intellegence_assistant\.venv
 ## Code map
 
 ```
-main.py                 download only
+main.py                 download, clean + split, build indexes
 app/dataset.py          Kaggle download into data/raw
 app/preprocess.py       clean(): dedupe, review_id, city/country, month/year, trip type, traveler group
 app/data_prep.py        chronological split + prepare()
@@ -116,14 +105,9 @@ Plan: call 4o-mini through a small client interface, with a fake client for test
 - New metrics to add then: `llm_latency_seconds`, `llm_tokens_total`, `llm_cost_usd_total`, `llm_errors_total`, `llm_fallback_total`, `citation_invalid_total`, `filter_rejected_total`.
 - Replace the hand-written `QUESTION_FRAME` list and `UNSUPPORTED_CITIES` with LLM behaviour.
 
-## Next steps (suggested order)
+## Next steps
 
-1. README (setup/run/test, assumptions) and wire steps 2-3 into `main.py`.
-2. LLM layer behind a client interface (works with a fake until credentials arrive).
-3. Golden set from the val split; evaluation plan; re-fit `RELEVANCE_MIN`.
-4. Design write-up (decisions, data flow, bottlenecks, failure modes) and monitoring/alerting plan.
-5. Architecture diagram.
-6. Bonus: 50M-review scaling. Ideas: partition by city/time, move to OpenSearch/Qdrant with filtered ANN plus BM25, precomputed aggregates, tiered caches, reranker only on a small candidate set.
+All assignment deliverables exist. Remaining: commit, review the diagram PDF and docs once more, and the later "improvements" section (see memory note: enum-constrained planner output, stronger judge/model, merge LLM calls, explain withheld answers).
 
 ## Alerting proposal (for the write-up)
 

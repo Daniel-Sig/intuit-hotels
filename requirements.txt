@@ -1,15 +1,17 @@
-fastapi
-uvicorn[standard]
-pydantic-settings
-python-dotenv
-openai
-pandas
-pyarrow
-numpy
-prometheus-client
-kagglehub
-pytest
-httpx
-bm25s
-PyStemmer
-fastembed
+# Python 3.11. Versions are those the prototype was built and tested with.
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+pydantic-settings==2.15.0
+python-dotenv==1.2.4
+openai==3.28.0
+pandas==3.0.6
+pyarrow==26.0.0
+numpy==2.4.6
+prometheus-client==0.26.0
+kagglehub==1.0.2
+bm25s==0.3.13
+PyStemmer==3.1.0
+fastembed==0.9.0
+# tests
+pytest==9.1.1
+httpx==0.28.1

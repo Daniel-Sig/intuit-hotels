@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 750" width="1500" height="750" role="img" aria-label="Architecture of the review assistant: an offline step builds the search indexes and statistics; each question is planned, searched, counted, gated, answered and checked, and every model output passes a code check before it reaches the user.">
+<defs>
+<marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1b2330"/></marker>
+<marker id="a-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a8650a"/></marker>
+<marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a63a3a"/></marker>
+<marker id="a-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#44505f"/></marker>
+</defs>
+<rect width="1500" height="750" fill="#ffffff"/>
+<text x="40" y="30" font-size="18" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Review Intelligence Assistant: architecture</text>
+<rect x="820" y="17" width="16" height="16" rx="3" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1.4"/>
+<text x="842" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">plain code</text>
+<rect x="944" y="17" width="16" height="16" rx="3" fill="#fbeed6" stroke="#a8650a" stroke-width="1.4"/>
+<text x="966" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM</text>
+<rect x="1012" y="17" width="16" height="16" rx="3" fill="#dcf1ee" stroke="#12776e" stroke-width="1.4"/>
+<text x="1034" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">local ranker</text>
+<rect x="1152" y="17" width="16" height="16" rx="3" fill="#e9edf3" stroke="#44505f" stroke-width="1.4"/>
+<text x="1174" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">store</text>
+<path d="M1236 25 L1264 25" stroke="#a8650a" stroke-width="1.8" stroke-dasharray="6 4"/>
+<text x="1270" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM call</text>
+<path d="M1352 25 L1380 25" stroke="#a63a3a" stroke-width="1.8"/>
+<text x="1386" y="30" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">decline</text>
+<rect x="20" y="45" width="1460" height="150" rx="14" fill="#f6f7f9" stroke="#c9d0da" stroke-width="1.2"/>
+<text x="38" y="71" font-size="13" font-weight="bold" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">OFFLINE</text>
+<text x="115.8" y="71" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">rebuilt daily or weekly; no LLM</text>
+<rect x="55" y="85" width="150" height="88" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="67" y="108" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Kaggle CSV</text>
+<text x="67" y="129" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">515K hotel reviews</text>
+<rect x="260" y="85" width="150" height="88" rx="8" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1.6"/>
+<text x="272" y="108" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Prepare</text>
+<text x="272" y="129" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">clean, split by date,</text>
+<text x="272" y="145" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">chunk by comment</text>
+<rect x="465" y="85" width="150" height="88" rx="8" fill="#e9edf3" stroke="#44505f" stroke-width="1.6"/>
+<text x="477" y="108" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">12 BM25 indexes</text>
+<text x="477" y="129" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">one per city and</text>
+<text x="477" y="145" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">sentiment</text>
+<rect x="670" y="85" width="150" height="88" rx="8" fill="#e9edf3" stroke="#44505f" stroke-width="1.6"/>
+<text x="682" y="108" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Train parquet</text>
+<text x="682" y="129" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">360K reviews, for</text>
+<text x="682" y="145" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">statistics</text>
+<path d="M205 129 L260 129" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<path d="M410 129 L465 129" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<path d="M335.0 85 L335.0 72 L745.0 72 L745.0 85" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="540.0" y="66" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">train reviews</text>
+<text x="930" y="120" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Each run writes a new versioned copy; it must pass the golden</text>
+<text x="930" y="140" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">set, then replicas switch to it one at a time (rollback = old copy).</text>
+<rect x="20" y="215" width="1460" height="375" rx="14" fill="#f6f7f9" stroke="#c9d0da" stroke-width="1.2"/>
+<text x="38" y="241" font-size="13" font-weight="bold" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">ONLINE</text>
+<text x="106.4" y="241" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">POST /ask: stateless, scale out with replicas</text>
+<rect x="55" y="300" width="150" height="95" rx="8" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1.6"/>
+<text x="67" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">FastAPI</text>
+<text x="67" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">POST /ask; checks</text>
+<text x="67" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">the input (422)</text>
+<rect x="260" y="300" width="150" height="95" rx="8" fill="#fbeed6" stroke="#a8650a" stroke-width="1.6"/>
+<text x="272" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">1 · Plan</text>
+<text x="272" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM: city, topic,</text>
+<text x="272" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">scope. Code: exact</text>
+<text x="272" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">values + operation</text>
+<rect x="368.4" y="308" width="33.6" height="16" rx="3" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1"/>
+<text x="385.2" y="320" font-size="10.5" font-weight="bold" fill="#2f5d9e" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">code</text>
+<rect x="337.2" y="308" width="27.2" height="16" rx="3" fill="#fbeed6" stroke="#a8650a" stroke-width="1"/>
+<text x="350.8" y="320" font-size="10.5" font-weight="bold" fill="#a8650a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">LLM</text>
+<rect x="465" y="300" width="150" height="95" rx="8" fill="#dcf1ee" stroke="#12776e" stroke-width="1.6"/>
+<text x="477" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">2 · Search</text>
+<text x="477" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">BM25 in matching</text>
+<text x="477" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">indexes, reranked</text>
+<text x="477" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">by cross-encoder</text>
+<rect x="560.6" y="308" width="46.4" height="16" rx="3" fill="#dcf1ee" stroke="#12776e" stroke-width="1"/>
+<text x="583.8000000000001" y="320" font-size="10.5" font-weight="bold" fill="#12776e" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">ranker</text>
+<rect x="670" y="300" width="150" height="95" rx="8" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1.6"/>
+<text x="682" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">3 · Statistics</text>
+<text x="682" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">pandas over all</text>
+<text x="682" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">matching reviews:</text>
+<text x="682" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">number or breakdown</text>
+<rect x="778.4" y="308" width="33.6" height="16" rx="3" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1"/>
+<text x="795.1999999999999" y="320" font-size="10.5" font-weight="bold" fill="#2f5d9e" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">code</text>
+<rect x="875" y="300" width="150" height="95" rx="8" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1.6"/>
+<text x="887" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">4 · Gate</text>
+<text x="887" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">too few or poor</text>
+<text x="887" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">matches: decline</text>
+<text x="887" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">(no LLM call)</text>
+<rect x="983.4" y="308" width="33.6" height="16" rx="3" fill="#e6eef9" stroke="#2f5d9e" stroke-width="1"/>
+<text x="1000.1999999999999" y="320" font-size="10.5" font-weight="bold" fill="#2f5d9e" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">code</text>
+<rect x="1080" y="300" width="150" height="95" rx="8" fill="#fbeed6" stroke="#a8650a" stroke-width="1.6"/>
+<text x="1092" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">5 · Answer</text>
+<text x="1092" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM writes it; code</text>
+<text x="1092" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">checks IDs, numbers</text>
+<text x="1092" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">and claims</text>
+<rect x="1194.8" y="308" width="27.2" height="16" rx="3" fill="#fbeed6" stroke="#a8650a" stroke-width="1"/>
+<text x="1208.3999999999999" y="320" font-size="10.5" font-weight="bold" fill="#a8650a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">LLM</text>
+<rect x="1285" y="300" width="150" height="95" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="1297" y="323" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Response</text>
+<text x="1297" y="344" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">answer, citations,</text>
+<text x="1297" y="360" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">evidence, stats,</text>
+<text x="1297" y="376" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">decline reason</text>
+<path d="M205 347 L260 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="232.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">valid</text>
+<path d="M410 347 L465 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="437.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">filters</text>
+<path d="M615 347 L670 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="642.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">reviews</text>
+<path d="M820 347 L875 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="847.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">stats</text>
+<path d="M1025 347 L1080 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="1052.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">evidence</text>
+<path d="M1230 347 L1285 347" fill="none" stroke="#1b2330" stroke-width="1.8" marker-end="url(#a-ink)"/>
+<text x="1257.5" y="339" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">checked</text>
+<path d="M540.0 173 L540.0 300" fill="none" stroke="#44505f" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a-grey)"/>
+<text x="550.0" y="232" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">index</text>
+<path d="M745.0 173 L745.0 300" fill="none" stroke="#44505f" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a-grey)"/>
+<text x="755.0" y="232" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">all rows</text>
+<rect x="260" y="455" width="970" height="78" rx="8" fill="#fbeed6" stroke="#a8650a" stroke-width="1.6"/>
+<text x="272" y="478" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">LLM provider (OpenAI-compatible API): one model, three calls per question</text>
+<text x="272" y="499" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">One model and one setting for all calls (gpt-4o-mini, Gemini or a local model). Each call is separate and sees only its own prompt.</text>
+<text x="272" y="515" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Timeout and retries on every call. If the model is down, the service still returns evidence and statistics.</text>
+<rect x="260" y="455" width="970" height="78" rx="8" fill="none" stroke="#a8650a" stroke-width="1.6" stroke-dasharray="6 4"/>
+<path d="M335.0 395 L335.0 455" fill="none" stroke="#a8650a" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a-amber)" marker-start="url(#a-amber)"/>
+<text x="345.0" y="431" font-size="11" font-weight="normal" fill="#a8650a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">call 1: plan (JSON)</text>
+<path d="M1120.0 395 L1120.0 455" fill="none" stroke="#a8650a" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a-amber)" marker-start="url(#a-amber)"/>
+<text x="1110.0" y="431" font-size="11" font-weight="normal" fill="#a8650a" text-anchor="end" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">call 2: answer</text>
+<path d="M1190.0 395 L1190.0 455" fill="none" stroke="#a8650a" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a-amber)" marker-start="url(#a-amber)"/>
+<text x="1200.0" y="431" font-size="11" font-weight="normal" fill="#a8650a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">call 3: claim check</text>
+<rect x="235.0" y="250" width="200" height="28" rx="15" fill="#f7e3e3" stroke="#a63a3a" stroke-width="1.6"/>
+<text x="335.0" y="269" font-size="12" font-weight="bold" fill="#a63a3a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">unknown city or off-topic</text>
+<path d="M335.0 300 L335.0 278" fill="none" stroke="#a63a3a" stroke-width="1.8" marker-end="url(#a-red)"/>
+<rect x="850.0" y="250" width="200" height="28" rx="15" fill="#f7e3e3" stroke="#a63a3a" stroke-width="1.6"/>
+<text x="950.0" y="269" font-size="12" font-weight="bold" fill="#a63a3a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">too few or irrelevant matches</text>
+<path d="M950.0 300 L950.0 278" fill="none" stroke="#a63a3a" stroke-width="1.8" marker-end="url(#a-red)"/>
+<text x="55" y="553" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Declines return a reason and message and never call the LLM for an answer.</text>
+<text x="55" y="573" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">If a check fails, the evidence is still returned with answer: null.</text>
+<rect x="20" y="610" width="1460" height="125" rx="14" fill="#f6f7f9" stroke="#c9d0da" stroke-width="1.2"/>
+<text x="38" y="636" font-size="13" font-weight="bold" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">OPERATE</text>
+<text x="115.8" y="636" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">observability and evaluation</text>
+<path d="M750 590 L750 610" fill="none" stroke="#44505f" stroke-width="1.8" marker-end="url(#a-grey)"/>
+<text x="762" y="605" font-size="11" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">every stage emits timings, counters, decline reasons</text>
+<rect x="55" y="650" width="325" height="64" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="67" y="673" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Logs</text>
+<text x="67" y="694" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">one JSON line per request, no question text</text>
+<rect x="410" y="650" width="325" height="64" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="422" y="673" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Metrics at /metrics</text>
+<text x="422" y="694" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">latency per stage, declines, LLM failures</text>
+<rect x="765" y="650" width="325" height="64" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="777" y="673" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Alerts</text>
+<text x="777" y="694" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">errors, latency, failed checks, spend</text>
+<rect x="1120" y="650" width="325" height="64" rx="8" fill="#ffffff" stroke="#8a94a3" stroke-width="1.6"/>
+<text x="1132" y="673" font-size="13.5" font-weight="bold" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Evaluation</text>
+<text x="1132" y="694" font-size="12" font-weight="normal" fill="#1b2330" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">40-question golden set + LLM judge</text>
+</svg>
