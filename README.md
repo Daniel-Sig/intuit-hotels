@@ -8,7 +8,7 @@ POST /ask {"question": "What do Australian guests say about Amsterdam hotels?"}
 
 ![Architecture diagram](architecture.png)
 
-Design, tradeoffs and diagram: [`DESIGN.md`](DESIGN.md) and [`docs/architecture.pdf`](docs/architecture.pdf). Monitoring and evaluation plan: [`EVAL_AND_MONITORING.md`](EVAL_AND_MONITORING.md). 515K to 50M reviews: [`SCALING.md`](SCALING.md).
+Design, tradeoffs and diagram: [`DESIGN.md`](DESIGN.md) and [`docs/architecture.pdf`](docs/architecture.pdf). One question traced end to end: [`WALKTHROUGH.md`](WALKTHROUGH.md). Monitoring and evaluation plan: [`EVAL_AND_MONITORING.md`](EVAL_AND_MONITORING.md). 515K to 50M reviews: [`SCALING.md`](SCALING.md).
 
 ## Quick start
 
