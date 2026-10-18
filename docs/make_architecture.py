@@ -155,8 +155,8 @@ for i, label in ((1, "unknown city or off-topic"), (4, "too few or irrelevant ma
     add(f'<rect x="{ctr[i] - 100}" y="250" width="200" height="28" rx="15" fill="{KINDS["stop"][0]}" stroke="{RED}" stroke-width="1.6"/>')
     text(ctr[i], 269, label, 12, "bold", RED, "middle")
     arrow([(ctr[i], r1), (ctr[i], 278)], RED)
-text(cols[0], 553, "Declines return a reason and message and never call the LLM for an answer.", 12, fill=RED)
-text(cols[0], 573, "If a check fails, the evidence is still returned with answer: null.", 12, fill=RED)
+text(cols[0], 553, "Declines return a reason and message and never call the LLM for an answer. Too few matches still returns the few found.", 12, fill=RED)
+text(cols[0], 573, "Relevance is judged right after the rerank. If an answer check fails, the evidence is still returned with answer: null.", 12, fill=RED)
 
 # ---------------- OPERATE ----------------
 panel(20, 610, 1460, 125, "OPERATE", "observability and evaluation")

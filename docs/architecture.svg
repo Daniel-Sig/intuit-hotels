@@ -125,8 +125,8 @@
 <rect x="850.0" y="250" width="200" height="28" rx="15" fill="#f7e3e3" stroke="#a63a3a" stroke-width="1.6"/>
 <text x="950.0" y="269" font-size="12" font-weight="bold" fill="#a63a3a" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">too few or irrelevant matches</text>
 <path d="M950.0 300 L950.0 278" fill="none" stroke="#a63a3a" stroke-width="1.8" marker-end="url(#a-red)"/>
-<text x="55" y="553" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Declines return a reason and message and never call the LLM for an answer.</text>
-<text x="55" y="573" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">If a check fails, the evidence is still returned with answer: null.</text>
+<text x="55" y="553" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Declines return a reason and message and never call the LLM for an answer. Too few matches still returns the few found.</text>
+<text x="55" y="573" font-size="12" font-weight="normal" fill="#a63a3a" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">Relevance is judged right after the rerank. If an answer check fails, the evidence is still returned with answer: null.</text>
 <rect x="20" y="610" width="1460" height="125" rx="14" fill="#f6f7f9" stroke="#c9d0da" stroke-width="1.2"/>
 <text x="38" y="636" font-size="13" font-weight="bold" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">OPERATE</text>
 <text x="115.8" y="636" font-size="12" font-weight="normal" fill="#5a6677" text-anchor="start" font-family="Segoe UI, Arial, sans-serif">observability and evaluation</text>

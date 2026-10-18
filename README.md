@@ -124,7 +124,16 @@ curl -X POST localhost:8000/ask -H "Content-Type: application/json" \
 | `unsupported_claims_removed` | Sentences the claim check deleted from the answer |
 | `latency_ms` | Total server time. About 3 s here, most of it the local model |
 
-**Declined questions** return 200 with `insufficient_evidence: true`, no answer, and a `reason`: `unsupported_city`, `off_topic`, `too_few_results` or `low_relevance`. For example, "What do guests say about hotels in Rome in spring?":
+**Declined questions** return 200 with `insufficient_evidence: true`, no answer, a `message` and a `reason`, and never call the LLM for an answer:
+
+| `reason` | When | `evidence` and `stats` |
+|---|---|---|
+| `unsupported_city` | The question names a city that is not in the data | empty |
+| `off_topic` | The question is not about hotel guest feedback (the planner's judgement) | empty |
+| `too_few_results` | Fewer than 3 reviews match the filters | the few matches and the statistics are still returned |
+| `low_relevance` | The best reranked result scores below the cutoff (skipped when a number was asked) | empty |
+
+For example, "What do guests say about hotels in Rome in spring?":
 
 ```json
 {"answer": null, "citations": [], "evidence": [], "stats": null,
