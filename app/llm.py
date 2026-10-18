@@ -26,12 +26,14 @@ Rules:
   give on them and copy their wording. A topic_breakdown summary says what share of mentions are in the guests'
   POSITIVE comment (what they liked) versus NEGATIVE comment (what they disliked); report it that way, and do not
   swap the two.
+- The data covers only part of the period (see "data_scope" in <stats>). When you give a count of reviews, say
+  "at least N reviews" and mention the date range from data_scope; never present it as the hotel's or city's total.
 - Cite every claim about reviews inline as [review_id], e.g. "Staff were helpful [123, 456]". Cite at least one
   review whenever you describe what guests said. Give numbers only if they appear in <stats>.
 - Reviews have a polarity (positive/negative comment); weigh both sides, and do not present a complaint as praise.
 - Write at least one complete sentence that restates what was asked; never reply with a bare number.
 - If the evidence does not answer the question, or the question is not about hotel guest feedback, say so.
-Reply as JSON: {"answer": "<2-5 sentences>", "cited_review_ids": [<ids you relied on>]}"""
+Reply as JSON: {"answer": "<a few sentences>", "cited_review_ids": [<ids you relied on>]}"""
 
 
 class LLMClient(Protocol):
@@ -146,7 +148,10 @@ class Answerer:
             LLM_LATENCY.observe(time.perf_counter() - start)
 
         sources = " ".join([question, stats.for_llm() if stats else "", *(e.text for e in evidence)])
-        if bad := ungrounded_numbers(text, sources, max_small_int=len(evidence)):
+        # "3 of the reviews" is fine when describing evidence, but when the question asked for a number, every number
+        # must come from the stats: a small invented count ("5 reviews in London") must not slip through.
+        small = 0 if stats and stats.operation else len(evidence)
+        if bad := ungrounded_numbers(text, sources, max_small_int=small):
             UNGROUNDED_NUMBER.inc()
             log.warning("answer dropped: numbers not in stats or evidence", extra={"fields": {"numbers": bad}})
             return None

@@ -20,7 +20,7 @@
 | `claims_removed_total`, `verify_errors_total` | sentences removed by the claim check; claim checks that failed (answer kept) |
 | `filter_rejected_total{field}` | LLM proposed filter values that do not exist |
 
-**Tests:** 83 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
+**Tests:** 85 offline tests on a small synthetic dataset and fake LLM clients (data cleaning, parsing, search, stats, API contract and error shapes, planner validation and fallback, answer grounding and failure handling).
 
 ## 2. Alerts (proposal)
 

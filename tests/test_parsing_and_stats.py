@@ -123,6 +123,14 @@ def test_summaries_state_the_numbers_in_one_sentence(clean_df):
     assert engine.compute({}, Operation(name="mean_score")).operation.summary.startswith("Average reviewer score: ")
 
 
+def test_counts_are_stated_as_minimums(clean_df):
+    engine = StatsEngine(clean_df)
+    one = engine.compute({"city": ["Paris"]}, Operation(name="count")).operation.summary
+    assert one.startswith("Review count: at least 3 reviews") and "only the indexed period" in one
+    assert "minimum counts" in engine.compute({}, Operation(name="count", group_by="city")).operation.summary
+    assert "at least" not in engine.compute({}, Operation(name="mean_score")).operation.summary
+
+
 def test_any_of_counts_reviews_with_either_word(clean_df):
     engine = StatsEngine(clean_df)
     both = engine.compute({}, None, topic="friendly noisy").topic_breakdown

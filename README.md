@@ -169,7 +169,7 @@ The prototype was developed and evaluated with `qwen2.5:3b`; a stronger model im
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 83 tests, offline, no data or network needed (~15 s)
+pytest                                        # 85 tests, offline, no data or network needed (~15 s)
 python scripts/run_golden.py --no-llm         # 40-question golden set against the real index, no LLM
 python scripts/run_golden.py --no-llm --check eval/golden_baseline.json   # fails if any layer regresses
 python scripts/run_questions.py eval/questions.csv eval/results.csv       # questions -> answers (needs an LLM)

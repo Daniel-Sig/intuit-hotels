@@ -79,10 +79,13 @@ def _summary(op: Operation, rows: list[dict]) -> str:
             "mention_count": f"Reviews mentioning '{op.term}'"}[op.name]
     if not rows:
         return f"{what}: no group has enough reviews."
+    # Only the indexed period is counted, so a count is a minimum: say so in the sentence the model copies.
+    floor = op.name == "count"
     if op.group_by is None:
-        return f"{what}: {line(rows[0])}."
+        return f"{what}: {'at least ' if floor else ''}{line(rows[0])}" + (" (only the indexed period is counted)." if floor else ".")
     order = "highest first" if op.name == "mean_score" else "most first"
-    return f"{what} by {op.group_by}, {order}: " + "; ".join(line(r) for r in rows) + "."
+    return (f"{what} by {op.group_by}, {order}: " + "; ".join(line(r) for r in rows) + "."
+            + (" These are minimum counts: only the indexed period is counted." if floor else ""))
 
 
 class StatsEngine:

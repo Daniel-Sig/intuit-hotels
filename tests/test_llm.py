@@ -63,6 +63,13 @@ def test_llm_not_called_when_insufficient(make_service):
     assert resp.insufficient_evidence and resp.answer is None and not llm.calls
 
 
+def test_invented_small_count_is_dropped_when_a_number_was_asked(make_service):
+    service = make_service()
+    service.answerer = Answerer(FakeLLM(json.dumps({"answer": "There are 5 reviews in Paris.", "cited_review_ids": []})))
+    resp = service.ask(AskRequest(question="how many reviews are there in each city?"))
+    assert resp.answer is None and resp.stats.operation  # a small number not in the stats must not slip through
+
+
 def test_ungrounded_numbers():
     from app.llm import ungrounded_numbers
     src = '{"mentions": 8563, "reviews": 41607, "share": 0.206, "value": 8.55} Staff 5 stars'

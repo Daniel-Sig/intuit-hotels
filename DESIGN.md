@@ -40,7 +40,7 @@ One desktop (6 cores, 16 GB), one user at a time:
 | Whole request without the LLM | ~260–440 ms |
 | Whole request with the LLM | ~5–6 s (free hosted); 0.5–6 s (local 3B on a GPU) |
 
-The LLM dominates latency and cost. Mitigations: skip it when evidence is insufficient, keep prompts small, retry with a timeout, make the claim check optional, and return retrieval results if the answer fails. Next: stream the answer, merge LLM calls, cache.
+The LLM dominates latency and cost. Mitigations: skip it when evidence is insufficient, keep prompts small, retry with a timeout, make the claim check optional, and return retrieval results if the answer fails. Next: stream, merge calls, cache.
 
 ## 4. Failure modes
 
@@ -72,4 +72,4 @@ The LLM dominates latency and cost. Mitigations: skip it when evidence is insuff
 
 ## 7. Known limitations
 
-"Mentions" are stem matches (they over-match and miss synonyms), and "positive/negative" means which comment a word is in, not measured sentiment. Only the train split is indexed (Aug 2015 – Jan 2017). Which number to compute is chosen by keyword rules, so a phrasing they don't know is declined as `low_relevance` ("which city is rated best?" works; "what's the most positively viewed city?" does not), and a share-of-positive-reviews ranking is not on the menu. A 3B model sometimes writes a bare number. The golden set is small and self-written: a regression guard, not proof of quality.
+"Mentions" are stem matches (they over-match and miss synonyms), and "positive/negative" means which comment a word is in, not measured sentiment. Only the train split is indexed (Aug 2015 – Jan 2017), so counts are minimums and answers say "at least N reviews" with the date range. Which number to compute is chosen by keyword rules: an unknown phrasing is declined as `low_relevance` ("which city is rated best?" works; "what's the most positively viewed city?" does not), and a share-of-positive ranking is not on the menu. Two columns are left out on purpose: the reviewer's past review count (weighting reviewers is a judgement the brief does not ask for) and the hotel's lifetime total (it does not match the rows we search). A 3B model sometimes writes a bare number. The golden set is small and self-written: a regression guard, not proof of quality.
