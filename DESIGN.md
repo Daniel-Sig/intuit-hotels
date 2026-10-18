@@ -72,4 +72,4 @@ The LLM dominates latency and cost. Mitigations: skip it when evidence is insuff
 
 ## 7. Known limitations
 
-"Mentions" are stem matches (they over-match and miss synonyms), and "positive/negative" means which comment a word is in, not measured sentiment. Only the train split is indexed (Aug 2015 – Jan 2017). A 3B model sometimes writes a bare number. The golden set is small and self-written: a regression guard, not proof of quality.
+"Mentions" are stem matches (they over-match and miss synonyms), and "positive/negative" means which comment a word is in, not measured sentiment. Only the train split is indexed (Aug 2015 – Jan 2017). Which number to compute is chosen by keyword rules, so a phrasing they don't know is declined as `low_relevance` ("which city is rated best?" works; "what's the most positively viewed city?" does not), and a share-of-positive-reviews ranking is not on the menu. A 3B model sometimes writes a bare number. The golden set is small and self-written: a regression guard, not proof of quality.
